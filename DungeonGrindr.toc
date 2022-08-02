@@ -1,0 +1,9 @@
+## Interface: 20504
+## Title: |cFFFFFFFFDungeonGrindr|r|cFF00FF00 v0.1|r
+## Author: Tandoor
+## Notes: When do we get RFD?
+## Version: 0.1
+## RequiredDeps:
+
+# Main
+DungeonGrindr.lua
