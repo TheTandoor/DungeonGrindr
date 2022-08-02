@@ -9,13 +9,11 @@ DungeonGrindr:RegisterEvent("LFG_LIST_SEARCH_FAILED");
 DungeonGrindr:RegisterEvent("LFG_LIST_SEARCH_RESULTS_RECEIVED");
 DungeonGrindr:RegisterEvent("LFG_LIST_SEARCH_RESULT_UPDATED");
 
-
---[[
-	In Progress: 
-		When the user presses the Queue button trigger a RoleCheck and then use the results of the role check to start the queue.
-		
+--[[ 
+	In progress:
+		* Blacklist
+		* Auto filter dungeons based on what is saved
 ]]
-
 
 local initCalled = false
 local roleCheckEnum = { none = "NONE", inprogress = "INPROGRESS", complete = "COMPLETE" }
@@ -628,7 +626,8 @@ function DungeonGrindr:InviteParty(dungeonId, groupToInvite, firstCall)
 	DungeonGrindr:PrettyPrint("Your Party is Ready!")
 	TimeSinceLastInvite = 0
 
-	-- SetDungeonDifficulty(2) -- Set to heroic 
+	-- Set to heroic
+	SetDungeonDifficultyID(2);
 
 	DungeonGrindr:Invite(groupToInvite.tank, "TANK", dungeonId); 
 	DungeonGrindr:Invite(groupToInvite.healer, "HEALER", dungeonId);
