@@ -18,4 +18,4 @@ DungeonGrinder is a temporary solution to a terrible problem. Blizzard is refusi
 
 
 ## Why is there an 'exclude warrior dps` checkbox?
-Because fuckem, thats why.
+Because they are suboptimal and the user should have the choice of which classes/roles they want to dungeon with. 
