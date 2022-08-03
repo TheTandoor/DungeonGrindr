@@ -15,3 +15,7 @@ DungeonGrinder is a temporary solution to a terrible problem. Blizzard is refusi
   b. Closing the DungeonGrindr frame doesn't remove you from queue and when your group is ready it will reopen automatically if using step a.
 5. Press the Invite To Group button when the queue pops
 ```
+
+
+## Why is there an 'exclude warrior dps` checkbox?
+Because fuckem, thats why.
