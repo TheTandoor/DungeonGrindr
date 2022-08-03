@@ -90,6 +90,15 @@ function DungeonGrindr:PrettyPrint(text)
 	print("[DungeonGrindr] " .. tostring(text)) 
 end
 
+
+function DungeonGrindr:TableContainsValue(tab, val)
+	for idx, value in ipairs(tab) do
+		if value == val then return true end 
+	end
+	
+	return false
+end
+
 -- UI BEGIN
 -- TODO not be a shitter and put the UILayer into something not stupid
 local boxFrame = CreateFrame("Frame", "DungeonGrindrMain", UIParent)
@@ -224,7 +233,7 @@ refreshFrame:SetText("Refresh")
 refreshFrame:RegisterForClicks("AnyUp")
 refreshFrame:SetScript("OnClick", function(self) 
 	DungeonGrindr:Retry(dungeonQueue)
-   self:Hide()
+	self:Hide()
 end)
 refreshFrame:Hide()
 
@@ -272,13 +281,17 @@ roleCheckButton:SetSize(100,20)
  -- Create and bind the initialization function to the dropdown menu
  UIDropDownMenu_Initialize(dropDown, function(self, level, menuList)
   local info = UIDropDownMenu_CreateInfo()
+  local availableActivities = C_LFGList.GetAvailableActivities(dungeonCategoryId);
   
    for i=1,#dungeonNames do
     info.text, info.checked = dungeonNames[i], dungeonQueue.dungeonName == dungeonNames[i]
     info.menuList = i
 	info.func = self.SetValue
 	info.arg1 = dungeonNames[i]
-    UIDropDownMenu_AddButton(info)
+
+	if DungeonGrindr:TableContainsValue(availableActivities, dungeonIDs.heroic[dungeonNames[i]]) then
+		UIDropDownMenu_AddButton(info)
+	end
   end
  end)
 
@@ -378,6 +391,13 @@ end)
 	CloseDropDownMenus()
  end
 
+local blackListWarriorsCheckbox = CreateFrame("CheckButton", nil, boxFrame, "UICheckButtonTemplate")
+blackListWarriorsCheckbox:SetPoint("TOPLEFT", playerRoleFrame, "TOPRIGHT", 5, 0)
+blackListWarriorsCheckbox.text = blackListWarriorsCheckbox:CreateFontString(nil,"OVERLAY", "GameFontNormal") 
+blackListWarriorsCheckbox.text:SetPoint("LEFT", blackListWarriorsCheckbox, "RIGHT", 0, 0)
+blackListWarriorsCheckbox.text:SetText("Exclude Warrior DPS")
+blackListWarriorsCheckbox:SetChecked(true)
+
 local dpsFrames = { dpsFrame, dps2Frame, dps3Frame };
 local roleFrames = { 
 	tank = tankFrame,
@@ -387,14 +407,63 @@ local roleFrames = {
 -- UI END
 
 
+-- MINIMAP
+local MinimapButton = CreateFrame('Button', "DGMinimapButton", Minimap)
+function MinimapButton:Load()
+    self:SetFrameStrata('HIGH')
+    self:SetWidth(31)
+    self:SetHeight(31)
+    self:SetFrameLevel(8)
+    self:RegisterForClicks('anyUp')
+    self:SetHighlightTexture('Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight')
+
+    local overlay = self:CreateTexture(nil, 'OVERLAY')
+    overlay:SetWidth(53)
+    overlay:SetHeight(53)
+    overlay:SetTexture('Interface\\Minimap\\MiniMap-TrackingBorder')
+    overlay:SetPoint('TOPLEFT')
+
+    local icon = self:CreateTexture(nil, 'BACKGROUND')
+	self.icon = icon
+    icon:SetWidth(20)
+    icon:SetHeight(20)
+    MinimapButton:SetRole(GetTalentGroupRole(GetActiveTalentGroup()))
+    icon:SetPoint('TOPLEFT', 7, -5)
+
+    self:SetScript('OnClick', self.OnClick)
+
+    self:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMRIGHT", -2, 2)
+end
+
+function MinimapButton:SetRole(role)
+	self.icon:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-ROLES");
+	self.icon:SetTexCoord(GetTexCoordsForRole(role))
+end
+
+function MinimapButton:OnClick(button)
+    if button == 'LeftButton' then
+        boxFrame:Show()
+	else 
+		boxFrame:Hide() 
+    end
+end 
+-- MINIMAP END
+
 -- OnEvent Handler
 DungeonGrindr:SetScript("OnEvent", function(f, event)
 	if initCalled == false then 
 		DungeonGrindr:Init()
+		MinimapButton:Load()
 		initCalled = true
 	end
 	
 	DungeonGrindr:DebugLFGList()
+	
+	-- simply ignore failures
+	if ( event == "LFG_LIST_SEARCH_FAILED" ) then
+		DungeonGrindr:DebugPrint(event);
+		return
+	end
 	
 	if event == "GROUP_ROSTER_UPDATE" then			
 		if GetNumGroupMembers() > 0 and dungeonQueue.dungeonId ~= nil then
@@ -406,8 +475,9 @@ DungeonGrindr:SetScript("OnEvent", function(f, event)
 	
 	if event == "ROLE_CHANGED_INFORM" or event == "TALENT_GROUP_ROLE_CHANGED" or event == "ACTIVE_TALENT_GROUP_CHANGED" then
 		playerRoleFrame.texture:SetTexCoord(GetTexCoordsForRole(GetTalentGroupRole(GetActiveTalentGroup())))
+		MinimapButton:SetRole(GetTalentGroupRole(GetActiveTalentGroup()))
 	end
-	
+
 	if event == "ROLE_CHANGED_INFORM" and dungeonQueue.roleCheckState == roleCheckEnum.inprogress then
 		dungeonQueue.roleCheckCount = dungeonQueue.roleCheckCount + 1
 		roleCheckButton:SetText(dungeonQueue.roleCheckCount .. " / " ..  GetNumGroupMembers())
@@ -464,12 +534,10 @@ DungeonGrindr:SetScript("OnEvent", function(f, event)
 			if DungeonGrindr:SearchResultContains(searchResultInfo, dungeonQueue.dungeonId) == true and searchResultInfo.isDelisted == false and searchResultInfo.numMembers == 1 then
 				DungeonGrindr:CachePlayerIfFits(dungeonQueue, groupToInvite, resultID)
 			end
-		end		
-	elseif ( event == "LFG_LIST_SEARCH_FAILED" ) then
-		DungeonGrindr:DebugPrint(event);
+		end
 	end
 	
-	DungeonGrindr:RefreshUI(groupToInvite, dungeonQueue)
+	DungeonGrindr:InvalidateUI(groupToInvite, dungeonQueue)
 end)
 
 function DungeonGrindr:SearchResultContains(searchResultInfo, activityId) 
@@ -485,15 +553,7 @@ function DungeonGrindr:SearchResultContains(searchResultInfo, activityId)
 	return false
 end
 
-function DungeonGrindr:TableContainsValue(tab, val)
-	for idx, value in ipairs(tab) do
-		if value == val then return true end 
-	end
-	
-	return false
-end
-
-function DungeonGrindr:RefreshUI(groupToInvite, dungeonQueue)
+function DungeonGrindr:InvalidateUI(groupToInvite, dungeonQueue)
 	dungeonNameFrame.text:SetText(dungeonQueue.dungeonName)
 	DungeonGrindr:UpdateNameFrames(groupToInvite)
 	DungeonGrindr:ShowRoleFrames(dungeonQueue.inQueue) -- Always show role frames if in queue
@@ -503,6 +563,7 @@ function DungeonGrindr:RefreshUI(groupToInvite, dungeonQueue)
 		if inviteGroupButton:IsShown() == false then 
 			PlaySound(SOUNDKIT.READY_CHECK);
 		end
+		boxFrame:Show()
 		inviteGroupButton:Show()
 	end
 
@@ -510,31 +571,40 @@ function DungeonGrindr:RefreshUI(groupToInvite, dungeonQueue)
 end
 
 function DungeonGrindr:EnsurePlayersStillInQueue(groupToInvite, dungeonQueue, results)
-	if not groupToInvite.tank == "" then 
+	if groupToInvite.tank ~= "" then 
+		local playerName = groupToInvite.tank
 		if DungeonGrindr:IsPlayerInQueueAsRole(playerName, "tank", results) == false then
 			dungeonQueue.tank = 0
 			groupToInvite.tank = ""
+			DungeonGrindr:DebugPrint("Removing TANK for not in queue: " .. playerName)
 		end
 	end
 	
-	if not groupToInvite.healer == "" then 
+	if groupToInvite.healer ~= "" then 
+		local playerName = groupToInvite.healer
 		if DungeonGrindr:IsPlayerInQueueAsRole(playerName, "healer", results) == false then
 			dungeonQueue.healer = 0
 			groupToInvite.healer = ""
+			DungeonGrindr:DebugPrint("Removing HEALER for not in queue: " .. playerName)
 		end
 	end
 	
 	for index = 1, #groupToInvite.dps do
-		if not groupToInvite.dps[index] == "" then
+		if groupToInvite.dps[index] ~= "" then
+			local playerName = groupToInvite.dps[index]
 			if DungeonGrindr:IsPlayerInQueueAsRole(playerName, role, results) == false then
 				dungeonQueue.dps = dungeonQueue.dps - 1
 				groupToInvite.dps[index] = ""
+				DungeonGrindr:DebugPrint("Removing DPS #" ..tostring(index) .. " for not in queue: " .. playerName)
 			end
 		end
 	end	
 end
 
 function DungeonGrindr:IsPlayerInQueueAsRole(playerName, role, results)
+	if playerName == UnitName("player") or playerName == player then return true end
+	
+	
 	local role = string.lower(role);
 	for index = 1, #results do
 		local resultID = results[index]
@@ -603,7 +673,7 @@ function DungeonGrindr:CachePlayerIfFits(dungeonQueue, groupToInvite, resultID)
 		dungeonQueue.healers = dungeonQueue.healers - 1
 		groupToInvite.healer = name
 		DungeonGrindr:SetFrameColor(roleFrames.healer, "green")
-	elseif soloRoleDPS == true and dungeonQueue.dps > 0 then	
+	elseif soloRoleDPS == true and dungeonQueue.dps > 0 and DungeonGrindr:ValidateRoleIsLogical(className, "DAMAGER") == true then	
 		groupToInvite.dps[dungeonQueue.dps] = name
 		DungeonGrindr:SetFrameColor(roleFrames.dps[dungeonQueue.dps], "green")
 		
@@ -619,6 +689,10 @@ function DungeonGrindr:ValidateRoleIsLogical(className, role)
 		return class == "paladin" or class == "priest" or class == "shaman" or class == "druid"
 	end
 	
+	if role == "DAMAGER" and class == "warrior" then
+		return not blackListWarriorsCheckbox:GetChecked()
+	end
+
 	return true
 end
 
@@ -843,6 +917,7 @@ end
 
 function DungeonGrindr:Retry(dungeonQueue)
 	if dungeonQueue.inQueue == false then DungeonGrindr:DebugPrint("Not in Queue") return end
+	DungeonGrindr:DebugPrint("Refresh Queue")
 	
 	C_LFGList.Search(dungeonCategoryId, { dungeonQueue.dungeonId });
 	
