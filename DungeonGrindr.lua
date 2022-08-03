@@ -78,7 +78,7 @@ end
 
 function DungeonGrindr:DebugPrint(text)
 	if DEBUG == false then return end
-	print("GB DEBUG: " .. text)
+	print("DG DEBUG: " .. text)
 end
 
 function DungeonGrindr:PrintGroupCache(groupToInvite) 
@@ -272,7 +272,7 @@ queueButton:Hide()
 roleCheckButton:SetSize(100,20)
  
  -- Create the dropdown, and configure its appearance
- local dropDown = CreateFrame("FRAME", "GBDropDown", boxFrame, "UIDropDownMenuTemplate")
+ local dropDown = CreateFrame("FRAME", "DGDropDown", boxFrame, "UIDropDownMenuTemplate")
  queueButton:SetPoint("TOPLEFT", dropDown, "CENTER", 5, -15)
  dropDown:SetPoint("CENTER", 0, 0)
  UIDropDownMenu_SetWidth(dropDown, 100)
@@ -343,7 +343,7 @@ closeButton:SetScript("OnClick", function(self)
 	boxFrame:Hide()
 end)
 
-local playerRoleFrame = CreateFrame("Button", "GBPlayerTalentFrameRoleButton", boxFrame)
+local playerRoleFrame = CreateFrame("Button", "DGPlayerTalentFrameRoleButton", boxFrame)
 playerRoleFrame:SetSize(30, 30)
 local pRF = playerRoleFrame:CreateTexture(nil,"BACKGROUND")
 pRF:SetAllPoints(playerRoleFrame)
@@ -353,7 +353,7 @@ playerRoleFrame.texture:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-ROLES");
 playerRoleFrame.texture:SetTexCoord(GetTexCoordsForRole("DAMAGER"))
 playerRoleFrame:RegisterForClicks("AnyUp")
 playerRoleFrame:SetScript("OnClick", function(self) 
-	ToggleDropDownMenu(1, nil, playerRoleFrame, "GBPlayerTalentFrameRoleButton", 17, 4);
+	ToggleDropDownMenu(1, nil, playerRoleFrame, "DGPlayerTalentFrameRoleButton", 17, 4);
 end)
 
  -- Create and bind the initialization function to the dropdown menu
@@ -928,7 +928,7 @@ end
 
 function DungeonGrindr:Init() 
 	playerRoleFrame.texture:SetTexCoord(GetTexCoordsForRole(GetTalentGroupRole(GetActiveTalentGroup())))
-	SLASH_DungeonGrindr1 = "/gb"
+	SLASH_DungeonGrindr1 = "/dg"
 	SlashCmdList["DungeonGrindr"] = function(msg) 
 		DungeonGrindr:ChatCommands(msg)
 	end
