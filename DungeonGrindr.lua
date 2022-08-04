@@ -301,7 +301,7 @@ function DungeonGrindr:EnsurePlayersStillInQueue(groupToInvite, dungeonQueue, re
 	if groupToInvite.tank ~= "" then 
 		local playerName = groupToInvite.tank
 		if DungeonGrindr:IsPlayerInQueueAsRole(playerName, "tank", results) == false then
-			dungeonQueue.tank = 0
+			dungeonQueue.tank = 1
 			groupToInvite.tank = ""
 			DungeonGrindr:SetFrameColor(roleFrames.tank, "red")
 			DungeonGrindr:DebugPrint("Removing TANK for not in queue: " .. playerName)
@@ -311,7 +311,7 @@ function DungeonGrindr:EnsurePlayersStillInQueue(groupToInvite, dungeonQueue, re
 	if groupToInvite.healer ~= "" then 
 		local playerName = groupToInvite.healer
 		if DungeonGrindr:IsPlayerInQueueAsRole(playerName, "healer", results) == false then
-			dungeonQueue.healer = 0
+			dungeonQueue.healer = 1
 			groupToInvite.healer = ""
 			DungeonGrindr:SetFrameColor(roleFrames.healer, "red")
 			DungeonGrindr:DebugPrint("Removing HEALER for not in queue: " .. playerName)
@@ -322,7 +322,7 @@ function DungeonGrindr:EnsurePlayersStillInQueue(groupToInvite, dungeonQueue, re
 		if groupToInvite.dps[index] ~= "" then
 			local playerName = groupToInvite.dps[index]
 			if DungeonGrindr:IsPlayerInQueueAsRole(playerName, "damager", results) == false then
-				dungeonQueue.dps = dungeonQueue.dps - 1
+				dungeonQueue.dps = dungeonQueue.dps + 1
 				groupToInvite.dps[index] = ""
 				DungeonGrindr:SetFrameColor(roleFrames.dps[index], "red")
 				DungeonGrindr:DebugPrint("Removing DPS #" ..tostring(index) .. " for not in queue: " .. playerName)
@@ -337,7 +337,7 @@ function DungeonGrindr:IsPlayerInQueueAsRole(playerName, role, results)
 	local role = string.lower(role);
 	for index = 1, #results do
 		local resultID = results[index]
-		local name, _, _, _, _, _, soloRoleTank, soloRoleHealer, soloRoleDPS = Funcs:LFGListGetSearchResultInfo(resultID);
+		local name, _, _, _, _, _, soloRoleTank, soloRoleHealer, soloRoleDPS = Funcs:GetSearchResultLeaderInfo(resultID);
 	
 		if name == playerName then
 			if role == "tank" then
@@ -657,12 +657,6 @@ function DungeonGrindr:Retry(dungeonQueue, tryAgain)
 	
 	if (Funcs:HasActiveEntryInfo()) then
 		LFGParentFrame_SearchActiveEntry();
-	end
-
-	local isGroupFull = (dungeonQueue.tanks + dungeonQueue.healers + dungeonQueue.dps) >= 5
-
-	if tryAgain == true and isGroupFull == false then 
-		--C_Timer.After(autoRefreshTimerInSeconds, function() DungeonGrindr:Retry(dungeonQueue, tryAgain) end)
 	end
 end
 
