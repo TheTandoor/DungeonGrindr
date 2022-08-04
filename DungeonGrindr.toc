@@ -6,4 +6,5 @@
 ## RequiredDeps:
 
 # Main
+DungeonGrindrUI.lua
 DungeonGrindr.lua
