@@ -302,6 +302,7 @@ function DungeonGrindr:EnsurePlayersStillInQueue(groupToInvite, dungeonQueue, re
 		if DungeonGrindr:IsPlayerInQueueAsRole(playerName, "tank", results) == false then
 			dungeonQueue.tank = 0
 			groupToInvite.tank = ""
+			DungeonGrindr:SetFrameColor(roleFrames.tank, "red")
 			DungeonGrindr:DebugPrint("Removing TANK for not in queue: " .. playerName)
 		end
 	end
@@ -311,6 +312,7 @@ function DungeonGrindr:EnsurePlayersStillInQueue(groupToInvite, dungeonQueue, re
 		if DungeonGrindr:IsPlayerInQueueAsRole(playerName, "healer", results) == false then
 			dungeonQueue.healer = 0
 			groupToInvite.healer = ""
+			DungeonGrindr:SetFrameColor(roleFrames.healer, "red")
 			DungeonGrindr:DebugPrint("Removing HEALER for not in queue: " .. playerName)
 		end
 	end
@@ -321,6 +323,7 @@ function DungeonGrindr:EnsurePlayersStillInQueue(groupToInvite, dungeonQueue, re
 			if DungeonGrindr:IsPlayerInQueueAsRole(playerName, "damager", results) == false then
 				dungeonQueue.dps = dungeonQueue.dps - 1
 				groupToInvite.dps[index] = ""
+				DungeonGrindr:SetFrameColor(roleFrames.dps[index], "red")
 				DungeonGrindr:DebugPrint("Removing DPS #" ..tostring(index) .. " for not in queue: " .. playerName)
 			end
 		end
