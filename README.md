@@ -19,3 +19,6 @@ DungeonGrinder is a temporary solution to a terrible problem. Blizzard is refusi
 
 ## Why is there an 'exclude warrior dps` checkbox?
 Because they are suboptimal and the user should have the choice of which classes/roles they want to dungeon with. 
+
+The main reason is that the community actively avoids specifics classes and this is meant to highlight the pains that are created for some players when RDF isn't added.
+Blizzard could easily create RDF and remove the dungeon teleport and xrealm functionality but they are choosing to ignore their own community pillar.
