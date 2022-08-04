@@ -1,6 +1,7 @@
 local addonName, T = ...;
 
 local DungeonGrindrUI = T.DungeonGrindrUI;
+local Funcs = T.Funcs;
 
 local dropDown = DungeonGrindrUI.framesCollection.dropDowns.dungeonDropDown
 local boxFrame = DungeonGrindrUI.framesCollection.boxFrame
@@ -79,20 +80,20 @@ local DEBUGDUNGEONS = false
 
 function DungeonGrindr:DebugLFGList()
 	if DEBUGDUNGEONS == false then return end
-	local results = select(2, C_LFGList.GetFilteredSearchResults());
-	local searchResultInfo = C_LFGList.GetSearchResultInfo(results[1]);
-	local name = C_LFGList.GetSearchResultLeaderInfo(results[1]);
+	local results = select(2, Funcs:GetFilteredSearchResults());
+	local searchResultInfo = Funcs:LFGListGetSearchResultInfo(results[1]);
+	local name = Funcs:GetSearchResultLeaderInfo(results[1]);
 	local activityIDs = searchResultInfo.activityIDs
 	if activityIDs == nil then print("activityIDs: nil") return end
 	for index = 1, #activityIDs do
-		local activityInfo = C_LFGList.GetActivityInfoTable(activityIDs[index])
-		print(activityInfo.fullName..": catID: "..activityInfo.categoryID .." activityID: " .. activityIDs[index])
+		local activityInfo = Funcs:GetActivityInfoTable(activityIDs[index])
+		Funcs:print(activityInfo.fullName..": catID: "..activityInfo.categoryID .." activityID: " .. activityIDs[index])
 	end
 end
 
 function DungeonGrindr:DebugPrint(text)
 	if DEBUG == false then return end
-	print("DG DEBUG: " .. text)
+	Funcs:print("DG DEBUG: " .. text)
 end
 
 function DungeonGrindr:PrintGroupCache(groupToInvite) 
@@ -101,7 +102,7 @@ end
 -- DEBUG END
 
 function DungeonGrindr:PrettyPrint(text)
-	print("[" .. DungeonGrindr:Rainbowify("DungeonGrindr") .. "] " .. tostring(text)) 
+	Funcs:print("[" .. DungeonGrindr:Rainbowify("DungeonGrindr") .. "] " .. tostring(text)) 
 end
 
 function DungeonGrindr:Rainbowify(text)
@@ -232,7 +233,7 @@ DungeonGrindr:SetScript("OnEvent", function(f, event)
 	end
 
 	-- ensure the user isn't navigating the group finder and looking at invalid results
-	local entryData = C_LFGList.GetActiveEntryInfo();
+	local entryData = Funcs:GetActiveEntryInfo();
 	if (entryData) then
 		if entryData.activityID ~= dungoneQueue.dungeonId then
 			return 
@@ -244,14 +245,14 @@ DungeonGrindr:SetScript("OnEvent", function(f, event)
 	elseif ( event == "LFG_LIST_SEARCH_RESULTS_RECEIVED" ) then
 		DungeonGrindr:DebugPrint(event);
 
-		local results = select(2, C_LFGList.GetFilteredSearchResults());
+		local results = select(2, Funcs:GetFilteredSearchResults());
 		DungeonGrindr:EnsurePlayersStillInQueue(groupToInvite, dungeonQueue, results)
 		
 		for index = 1, #results do
 			if dungeonQueue.inQueue == false then break end
 			
 			local resultID = results[index]
-			local searchResultInfo = C_LFGList.GetSearchResultInfo(resultID);
+			local searchResultInfo = Funcs:LFGListGetSearchResultInfo(resultID);
 			
 			if searchResultInfo.isDelisted == true then
 				DungeonGrindr:RemovePlayerForDelisted(dungeonQueue, groupToInvite, resultID)
@@ -336,7 +337,7 @@ function DungeonGrindr:IsPlayerInQueueAsRole(playerName, role, results)
 	local role = string.lower(role);
 	for index = 1, #results do
 		local resultID = results[index]
-		local name, _, _, _, _, _, soloRoleTank, soloRoleHealer, soloRoleDPS = C_LFGList.GetSearchResultLeaderInfo(resultID);
+		local name, _, _, _, _, _, soloRoleTank, soloRoleHealer, soloRoleDPS = Funcs:LFGListGetSearchResultInfo(resultID);
 	
 		if name == playerName then
 			if role == "tank" then
@@ -357,7 +358,7 @@ function DungeonGrindr:RemovePlayerForDelisted(dungeonQueue, groupToInvite, resu
 	local tankFrame = roleFrames.tank
 	local healerFrame = roleFrames.healer
 	
-	local name = C_LFGList.GetSearchResultLeaderInfo(resultID);
+	local name = Funcs:GetSearchResultLeaderInfo(resultID);
 	if groupToInvite.tank == name then 
 		groupToInvite.tank = ""
 		DungeonGrindr:SetFrameColor(tankFrame, "red")
@@ -392,7 +393,7 @@ function DungeonGrindr:RemovePlayerForDelisted(dungeonQueue, groupToInvite, resu
 end
 
 function DungeonGrindr:CachePlayerIfFits(dungeonQueue, groupToInvite, resultID)
-	local name, role, classFileName, className, level, areaName, soloRoleTank, soloRoleHealer, soloRoleDPS = C_LFGList.GetSearchResultLeaderInfo(resultID);
+	local name, role, classFileName, className, level, areaName, soloRoleTank, soloRoleHealer, soloRoleDPS = Funcs:GetSearchResultLeaderInfo(resultID);
 	
 	-- Guard against duplicates 
 	if groupToInvite.tank == name or groupToInvite.healer == name then return end 
@@ -462,13 +463,13 @@ function DungeonGrindr:Invite(player, role, dungeonId)
 	end
 	
 	if DEBUG then
-		local activityInfo = C_LFGList.GetActivityInfoTable(dungeonId)
+		local activityInfo = Funcs:GetActivityInfoTable(dungeonId)
 		DungeonGrindr:DebugPrint("[DungeonGrindr] auto invited " .. player .." to " .. activityInfo.fullName .. " as a " .. role)
 		return
 	end
 	
 	
-	local activityInfo = C_LFGList.GetActivityInfoTable(dungeonId)
+	local activityInfo = Funcs:GetActivityInfoTable(dungeonId)
 	DungeonGrindr:DebugPrint("[DungeonGrindr] auto invited " .. player .." to " .. activityInfo.fullName .. " as a " .. role)
 	InviteUnit(player)
 	SendChatMessage("[DungeonGrindr] You were queued and invited for |cFFFFFF00" .. activityInfo.fullName .. "|r as a |cFFFF0000" .. role .. "|r", "WHISPER", nil, player)
@@ -652,9 +653,9 @@ function DungeonGrindr:Retry(dungeonQueue, tryAgain)
 	if dungeonQueue.inQueue == false then DungeonGrindr:DebugPrint("Not in Queue") return end
 	DungeonGrindr:DebugPrint("Refresh Queue")
 	
-	C_LFGList.Search(dungeonCategoryId, { dungeonQueue.dungeonId });
+	Funcs:Search(dungeonCategoryId, { dungeonQueue.dungeonId });
 	
-	if (C_LFGList.HasActiveEntryInfo()) then
+	if (Funcs:HasActiveEntryInfo()) then
 		LFGParentFrame_SearchActiveEntry();
 	end
 
@@ -739,7 +740,7 @@ end)
  -- Create and bind the initialization function to the dropdown menu
 UIDropDownMenu_Initialize(dropDown, function(self, level, menuList)
 	local info = UIDropDownMenu_CreateInfo()
-	local availableActivities = C_LFGList.GetAvailableActivities(dungeonCategoryId);
+	local availableActivities = Funcs:GetAvailableActivities(dungeonCategoryId);
 
 	for i=1,#dungeonNames do
 		info.text, info.checked = dungeonNames[i], dungeonQueue.dungeonName == dungeonNames[i]

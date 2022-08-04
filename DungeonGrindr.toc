@@ -6,5 +6,6 @@
 ## RequiredDeps:
 
 # Main
+DungeonGrindrBlizzFuncs.lua
 DungeonGrindrUI.lua
 DungeonGrindr.lua
