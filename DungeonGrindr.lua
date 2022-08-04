@@ -32,7 +32,6 @@ DungeonGrindr:RegisterEvent("LFG_LIST_SEARCH_RESULT_UPDATED");
 
 local initCalled = false
 local roleCheckEnum = { none = "NONE", inprogress = "INPROGRESS", complete = "COMPLETE" }
-local autoRefreshTimerInSeconds = 10
 
 local dungeonQueue = {
 	roleCheckState = roleCheckEnum.none,
@@ -44,7 +43,6 @@ local dungeonQueue = {
 	healers = 1,
 	dps = 3,
 }
-
 
 local dungeonCategoryId = 2
 
@@ -103,9 +101,28 @@ end
 -- DEBUG END
 
 function DungeonGrindr:PrettyPrint(text)
-	print("[DungeonGrindr] " .. tostring(text)) 
+	print("[" .. DungeonGrindr:Rainbowify("DungeonGrindr") .. "] " .. tostring(text)) 
 end
 
+function DungeonGrindr:Rainbowify(text)
+	local red = "|cFFFF0000"
+	local green = "|cFF00FF00" 
+	local blue = "|cFF0000FF"
+	local purple = "|cFFFF00FF"
+	local yellow = "|cFFFFFF00"
+	local teal = "|cFF00FFFF"
+	local close = "|r"
+	
+	local newString = ""
+	
+	local colors = { red, green, blue, purple, yellow, teal }
+	for i = 1, #text do
+		local c = text:sub(i,i)
+		newString = newString .. colors[ math.random( #colors ) ] .. c .. close
+	end
+	
+	return newString
+end
 
 function DungeonGrindr:TableContainsValue(tab, val)
 	for idx, value in ipairs(tab) do
