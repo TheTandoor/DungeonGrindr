@@ -36,6 +36,13 @@ dungeonNameFrame.text = dungeonNameFrame:CreateFontString(nil,"OVERLAY", "GameFo
 dungeonNameFrame.text:SetPoint("TOP", boxFrame, "TOP", 0, 0)
 dungeonNameFrame.text:SetText("")
 
+local addonNameFrame = CreateFrame("Frame", nil, boxFrame)
+addonNameFrame:SetSize(30, 100)
+addonNameFrame.text = addonNameFrame:CreateFontString(nil,"OVERLAY", "GameFontNormal") 
+addonNameFrame.text:SetFont("Fonts\\FRIZQT__.TTF", 18, "OUTLINE, MONOCHROME")
+addonNameFrame.text:SetPoint("BOTTOM", boxFrame, "BOTTOM", 0, 0)
+addonNameFrame.text:SetText("")
+
 local tankFrame = CreateFrame("Frame", nil, boxFrame)
 tankFrame:SetSize(30, 30)
 local tf = tankFrame:CreateTexture(nil,"BACKGROUND")
@@ -134,7 +141,7 @@ refreshFrame:Hide()
 
 local inviteGroupButton = CreateFrame("Button", "DungeonGrindrRefresh", boxFrame, "UIPanelButtonTemplate");
 inviteGroupButton:SetSize(100,20)
-inviteGroupButton:SetPoint("BOTTOM",0,0)
+inviteGroupButton:SetPoint("BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", 0,0)
 inviteGroupButton:SetText("INVITE GROUP")
 inviteGroupButton:Hide()
 
@@ -224,6 +231,7 @@ local roleFrames = {
 T.DungeonGrindrUI.framesCollection = { 
 	roleFrames = roleFrames,
 	titleFrame = dungeonNameFrame,
+	addonNameFrame = addonNameFrame,
 	boxFrame = boxFrame,
 	buttons = buttons,
 	dropDowns = dropDowns,

@@ -234,9 +234,7 @@ DungeonGrindr:SetScript("OnEvent", function(f, event)
 	-- ensure the user isn't navigating the group finder and looking at invalid results
 	local entryData = C_LFGList.GetActiveEntryInfo();
 	if (entryData) then
-		print("found entrydata")
 		if entryData.activityID ~= dungoneQueue.dungeonId then
-			print("invalid entry id, ignoring it")
 			return 
 		end 
 	end
@@ -470,7 +468,7 @@ function DungeonGrindr:Invite(player, role, dungeonId)
 	local activityInfo = C_LFGList.GetActivityInfoTable(dungeonId)
 	DungeonGrindr:DebugPrint("[DungeonGrindr] auto invited " .. player .." to " .. activityInfo.fullName .. " as a " .. role)
 	InviteUnit(player)
-	SendChatMessage("[DungeonGrindr] You were queued for a " .. activityInfo.fullName .. " as a " .. role, "WHISPER", nil, player)
+	SendChatMessage("[DungeonGrindr] You were queued and invited for |cFFFFFF00" .. activityInfo.fullName .. "|r as a |cFFFF0000" .. role .. "|r", "WHISPER", nil, player)
 	SendChatMessage("[DungeonGrindr] If you are in a party, please drop group. You will be invited again in 15s", "WHISPER", nil, player)
 end
 
@@ -667,6 +665,7 @@ end
 
 function DungeonGrindr:Init() 
 	roleFrames.player.texture:SetTexCoord(GetTexCoordsForRole(GetTalentGroupRole(GetActiveTalentGroup())))
+	DungeonGrindrUI.framesCollection.addonNameFrame.text:SetText("DungeonGrindr")
 	SLASH_DungeonGrindr1 = "/dg"
 	SlashCmdList["DungeonGrindr"] = function(msg) 
 		print("DungeonGrindrUI[1]: " .. tostring(DungeonGrindrUI[1]))
@@ -716,7 +715,9 @@ frame:SetScript("OnUpdate", function(self, elapsed)
 	if TimeSinceLastUpdate >= ONUPDATE_INTERVAL then
 		TimeSinceLastUpdate = 0
 		
-		if dungeonQueue.inQueue == false then return end
+		local isGroupFull = (dungeonQueue.tanks + dungeonQueue.healers + dungeonQueue.dps) >= 5
+		
+		if dungeonQueue.inQueue == false or isGroupFull == true then return end
 		DungeonGrindr:DebugPrint("OnUpdate Queue search")
 		refreshFrame:Show()
 	end
