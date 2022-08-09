@@ -670,7 +670,7 @@ function DungeonGrindr:FillGroupFor(dungeonId)
 	else
 		DungeonGrindr:PrettyPrint("Joined queue for " .. tostring(dungeonQueue.dungeonName))
 	end
-	DungeonGrindr:JoinGroupFinder(dungeonQueue)
+
 	DungeonGrindr:Retry(dungeonQueue)
 end
 
