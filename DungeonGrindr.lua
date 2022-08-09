@@ -209,8 +209,13 @@ DungeonGrindr:SetScript("OnEvent", function(f, event)
 		queueButton:Hide()
 	else
 		if dungeonQueue.dungeonId ~= nil then
-			queueButton:Show()
 			roleCheckButton:Hide()
+		end
+		
+		if dungeonQueue.inQueue == true then 
+			queueButton:Hide()
+		else 
+			queueButton:Show()
 		end
 	end
 	
