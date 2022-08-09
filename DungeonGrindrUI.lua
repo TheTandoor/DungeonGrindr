@@ -161,14 +161,13 @@ queueButton:Hide()
 
  
 -- Create the dropdown, and configure its appearance
-local dropDown = CreateFrame("FRAME", "DGDropDown", boxFrame, "UIDropDownMenuTemplate")
-queueButton:SetPoint("TOPLEFT", dropDown, "CENTER", 5, -15)
-dropDown:SetPoint("CENTER", 0, 0)
-UIDropDownMenu_SetWidth(dropDown, 100)
-UIDropDownMenu_SetText(dropDown, "Select a Heroic")
+local activityDropdown = CreateFrame("FRAME", "DGDropDown", boxFrame, "UIDropDownMenuTemplate")
+activityDropdown:SetPoint("CENTER", boxFrame, "CENTER", 0, 0)
+roleCheckButton:SetPoint("TOPRIGHT", activityDropdown, "CENTER", -5,-15)
+queueButton:SetPoint("TOPLEFT", activityDropdown, "CENTER", 5, -15)
+UIDropDownMenu_SetWidth(activityDropdown, 150)
 
 
-roleCheckButton:SetPoint("TOPRIGHT", dropDown, "CENTER", -5,-15)
 roleCheckButton:SetText("Role Check")
 roleCheckButton:Hide()
 
@@ -211,7 +210,7 @@ local checkBoxes = {
 
 
 local dropDowns = {
-	dungeonDropDown = dropDown,
+	dungeonDropDown = activityDropdown,
 }
 
 local dpsFrames = { dpsFrame, dps2Frame, dps3Frame };

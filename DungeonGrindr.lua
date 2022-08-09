@@ -3,7 +3,7 @@ local addonName, T = ...;
 local DungeonGrindrUI = T.DungeonGrindrUI;
 local Funcs = T.Funcs;
 
-local dropDown = DungeonGrindrUI.framesCollection.dropDowns.dungeonDropDown
+local activityDropdown = DungeonGrindrUI.framesCollection.dropDowns.dungeonDropDown
 local boxFrame = DungeonGrindrUI.framesCollection.boxFrame
 local queueButton = DungeonGrindrUI.framesCollection.buttons.queue
 local refreshFrame = DungeonGrindrUI.framesCollection.buttons.refresh
@@ -13,6 +13,8 @@ local inviteGroupButton = DungeonGrindrUI.framesCollection.buttons.inviteGroup
 local roleCheckButton = DungeonGrindrUI.framesCollection.buttons.roleCheck
 
 local roleFrames = DungeonGrindrUI.framesCollection.roleFrames
+
+activityDropdown.selectedValues = {};
 
 DungeonGrindr = CreateFrame("frame");
 
@@ -25,12 +27,6 @@ DungeonGrindr:RegisterEvent("LFG_LIST_SEARCH_FAILED");
 DungeonGrindr:RegisterEvent("LFG_LIST_SEARCH_RESULTS_RECEIVED");
 DungeonGrindr:RegisterEvent("LFG_LIST_SEARCH_RESULT_UPDATED");
 
---[[ 
-	In progress:
-		* Blacklist
-		* Auto filter dungeons based on what is saved
-]]
-
 local initCalled = false
 local roleCheckEnum = { none = "NONE", inprogress = "INPROGRESS", complete = "COMPLETE" }
 
@@ -40,33 +36,14 @@ local dungeonQueue = {
 	dungeonId = nil,
 	dungeonName = "",
 	inQueue = false,
-	tanks = 1,
-	healers = 1,
-	dps = 3,
+	needs = {
+		tanks = 1,
+		healers = 1,
+		dps = 3,
+	},
 }
 
 local dungeonCategoryId = 2
-
-local dungeonIDs = {
-	heroic = {
-		OK = 1131,
-		AN = 1121,
-		DTK = 1129,
-		Gundrak = 1130,
-		HOL = 1127,
-		HOS = 1128,
-		Strath = 1126,
-		Nexus = 1132,
-		Oculus = 1124,
-		UK = 1122,
-		UP = 1125,
-		VH = 1123,
-	}
-}
-
-local dungeonNames = {
-	"OK", "AN", "DTK", "Gundrak", "HOL", "HOS", "Strath", "Nexus", "Oculus", "UK", "UP", "VH",
-}
 
 local groupToInvite = {
 	tank = "",
@@ -178,15 +155,25 @@ function MinimapButton:OnClick(button)
 end 
 -- MINIMAP END
 
+function DungeonGrindr:RefreshDropdown()
+	UIDropDownMenu_Initialize(activityDropdown, _LFGBrowseActivityDropDown_Initialize);
+end
+
 -- OnEvent Handler
 DungeonGrindr:SetScript("OnEvent", function(f, event)
 	if initCalled == false then 
 		DungeonGrindr:Init()
 		MinimapButton:Load()
 		initCalled = true
+		
+		UIDropDownMenu_Initialize(activityDropdown, _LFGBrowseActivityDropDown_Initialize);
 	end
 	
 	DungeonGrindr:DebugLFGList()
+	
+	if event == "LFG_LIST_AVAILABILITY_UPDATE" then 
+		--DungeonGrindr:RefreshDropdown()
+	end
 	
 	-- simply ignore failures
 	if ( event == "LFG_LIST_SEARCH_FAILED" ) then
@@ -281,12 +268,16 @@ function DungeonGrindr:SearchResultContains(searchResultInfo, activityId)
 end
 
 function DungeonGrindr:InvalidateUI(groupToInvite, dungeonQueue)
-	DungeonGrindrUI.framesCollection.titleFrame.text:SetText(dungeonQueue.dungeonName)
+	if dungeonQueue.dungeonId > 1120 then 
+		DungeonGrindrUI.framesCollection.titleFrame.text:SetText("HC: "..dungeonQueue.dungeonName)
+	else
+		DungeonGrindrUI.framesCollection.titleFrame.text:SetText(dungeonQueue.dungeonName)
+	end
 	DungeonGrindr:UpdateNameFrames(groupToInvite)
 	DungeonGrindr:ShowRoleFrames(dungeonQueue.inQueue) -- Always show role frames if in queue
 	
 	-- Update UI elements for when the queue is complete
-	if dungeonQueue.tanks <= 0 and dungeonQueue.healers <= 0 and dungeonQueue.dps <= 0 then
+	if dungeonQueue.needs.tanks <= 0 and dungeonQueue.needs.healers <= 0 and dungeonQueue.needs.dps <= 0 then
 		if inviteGroupButton:IsShown() == false then 
 			PlaySound(SOUNDKIT.READY_CHECK);
 		end
@@ -363,31 +354,31 @@ function DungeonGrindr:RemovePlayerForDelisted(dungeonQueue, groupToInvite, resu
 		groupToInvite.tank = ""
 		DungeonGrindr:SetFrameColor(tankFrame, "red")
 		roleFrames.nameFrames.tank.text:SetText("")
-		dungeonQueue.tanks = dungeonQueue.tanks + 1
+		dungeonQueue.needs.tanks = dungeonQueue.needs.tanks + 1
 		DungeonGrindr:DebugPrint("Removing player for delist: " .. name)
 	elseif groupToInvite.healer == name then
 		groupToInvite.healer = ""
 		DungeonGrindr:SetFrameColor(healerFrame, "red")
 		roleFrames.nameFrames.healer.text:SetText("")
-		dungeonQueue.healers = dungeonQueue.healers + 1
+		dungeonQueue.needs.healers = dungeonQueue.needs.healers + 1
 		DungeonGrindr:DebugPrint("Removing player for delist: " .. name)
 	elseif groupToInvite.dps[1] == name then
 		groupToInvite.dps[1] = ""
 		DungeonGrindr:SetFrameColor(dpsFrames[1], "red")
 		roleFrames.nameFrames.dps[1].text:SetText("")
-		dungeonQueue.dps = dungeonQueue.dps + 1
+		dungeonQueue.needs.dps = dungeonQueue.needs.dps + 1
 		DungeonGrindr:DebugPrint("Removing player for delist: " .. name)
 	elseif groupToInvite.dps[2] == name then
 		groupToInvite.dps[2] = ""
 		DungeonGrindr:SetFrameColor(dpsFrames[2], "red")
 		roleFrames.nameFrames.dps[2].text:SetText("")
-		dungeonQueue.dps = dungeonQueue.dps + 1
+		dungeonQueue.needs.dps = dungeonQueue.needs.dps + 1
 		DungeonGrindr:DebugPrint("Removing player for delist: " .. name)
 	elseif groupToInvite.dps[3] == name then
 		groupToInvite.dps[3] = ""
 		DungeonGrindr:SetFrameColor(dpsFrames[3], "red")
 		roleFrames.nameFrames.dps[3].text:SetText("")
-		dungeonQueue.dps = dungeonQueue.dps + 1
+		dungeonQueue.needs.dps = dungeonQueue.needs.dps + 1
 		DungeonGrindr:DebugPrint("Removing player for delist: " .. name)
 	end
 end
@@ -401,22 +392,22 @@ function DungeonGrindr:CachePlayerIfFits(dungeonQueue, groupToInvite, resultID)
 		if groupToInvite.dps[index] == name then return end
 	end
 	
-	if soloRoleTank == true and dungeonQueue.tanks > 0 and DungeonGrindr:ValidateRoleIsLogical(className, "TANK") == true then
-		dungeonQueue.tanks = dungeonQueue.tanks - 1
+	if soloRoleTank == true and dungeonQueue.needs.tanks > 0 and DungeonGrindr:ValidateRoleIsLogical(className, "TANK") == true then
+		dungeonQueue.needs.tanks = dungeonQueue.needs.tanks - 1
 		groupToInvite.tank = name
 		roleFrames.nameFrames.tank.text:SetText(name)
 		DungeonGrindr:SetFrameColor(roleFrames.tank, "green")
-	elseif soloRoleHealer == true and dungeonQueue.healers > 0 and DungeonGrindr:ValidateRoleIsLogical(className, "HEALER") == true then
-		dungeonQueue.healers = dungeonQueue.healers - 1
+	elseif soloRoleHealer == true and dungeonQueue.needs.healers > 0 and DungeonGrindr:ValidateRoleIsLogical(className, "HEALER") == true then
+		dungeonQueue.needs.healers = dungeonQueue.needs.healers - 1
 		roleFrames.nameFrames.healer.text:SetText(name)
 		groupToInvite.healer = name
 		DungeonGrindr:SetFrameColor(roleFrames.healer, "green")
-	elseif soloRoleDPS == true and dungeonQueue.dps > 0 and DungeonGrindr:ValidateRoleIsLogical(className, "DAMAGER") == true then	
-		groupToInvite.dps[dungeonQueue.dps] = name
-		roleFrames.nameFrames.dps[dungeonQueue.dps].text:SetText(name)
-		DungeonGrindr:SetFrameColor(roleFrames.dps[dungeonQueue.dps], "green")
+	elseif soloRoleDPS == true and dungeonQueue.needs.dps > 0 and DungeonGrindr:ValidateRoleIsLogical(className, "DAMAGER") == true then	
+		groupToInvite.dps[dungeonQueue.needs.dps] = name
+		roleFrames.nameFrames.dps[dungeonQueue.needs.dps].text:SetText(name)
+		DungeonGrindr:SetFrameColor(roleFrames.dps[dungeonQueue.needs.dps], "green")
 		
-		dungeonQueue.dps = dungeonQueue.dps - 1
+		dungeonQueue.needs.dps = dungeonQueue.needs.dps - 1
 	end
 end
 
@@ -506,9 +497,9 @@ function DungeonGrindr:LeaveQueue()
 	dungeonQueue.dungeonId = dungeonQueue.dungeonId
 	dungeonQueue.dungeonName = dungeonQueue.dungeonName
 	dungeonQueue.inQueue = false
-	dungeonQueue.tanks = 1
-	dungeonQueue.healers = 1
-	dungeonQueue.dps = 3
+	dungeonQueue.needs.tanks = 1
+	dungeonQueue.needs.healers = 1
+	dungeonQueue.needs.dps = 3
 	
 	groupToInvite.tank = ""
 	groupToInvite.healer = ""
@@ -567,7 +558,7 @@ end
 
 function DungeonGrindr:ShowRoleFrames(shown) 
 	if shown then
-		dropDown:Hide()
+		activityDropdown:Hide()
 		queueButton:Hide()
 		leaveQueueButton:Show()
 		roleFrames.tank:Show()
@@ -582,7 +573,7 @@ function DungeonGrindr:ShowRoleFrames(shown)
 		roleFrames.nameFrames.dps[2]:Show()
 		roleFrames.nameFrames.dps[3]:Show()
 	else
-		dropDown:Show()
+		activityDropdown:Show()
 		queueButton:Show()
 		leaveQueueButton:Hide()
 		roleFrames.tank:Hide()
@@ -632,12 +623,10 @@ function DungeonGrindr:FillGroupFor(dungeonId)
 	end
 	DungeonGrindr:DebugPrint("---- Current Group: " .. groupComp["tanks"] .. ":" .. groupComp["healers"] .. ":" .. groupComp["dps"] .. " ----")
 	
-	--dungeonQueue.dungeonName = dungeonNames[dungeonId]
-	DungeonGrindrUI.framesCollection.titleFrame.text:SetText(dungeonQueue.dungeonName)
 	dungeonQueue.dungeonId = dungeonId
-	dungeonQueue.tanks = 1 - groupComp.tanks
-	dungeonQueue.healers = 1 - groupComp.healers
-	dungeonQueue.dps = 3 - groupComp.dps
+	dungeonQueue.needs.tanks = 1 - groupComp.tanks
+	dungeonQueue.needs.healers = 1 - groupComp.healers
+	dungeonQueue.needs.dps = 3 - groupComp.dps
 	dungeonQueue.inQueue = true
 	
 	if IsInGroup() then
@@ -713,7 +702,7 @@ frame:SetScript("OnUpdate", function(self, elapsed)
 	if TimeSinceLastUpdate >= ONUPDATE_INTERVAL then
 		TimeSinceLastUpdate = 0
 		
-		local isGroupFull = (dungeonQueue.tanks + dungeonQueue.healers + dungeonQueue.dps) >= 5
+		local isGroupFull = (dungeonQueue.needs.tanks + dungeonQueue.needs.healers + dungeonQueue.needs.dps) >= 5
 		
 		if dungeonQueue.inQueue == false or isGroupFull == true then return end
 		DungeonGrindr:DebugPrint("OnUpdate Queue search")
@@ -726,31 +715,10 @@ frame:SetScript("OnShow", function(self)
 	TimeSinceLastUpdate = 0
 end)
 
-
-
--- UI BEGIN
--- TODO not be a shitter and put the UILayer into something not stupid
---- UI
- -- Create and bind the initialization function to the dropdown menu
-UIDropDownMenu_Initialize(dropDown, function(self, level, menuList)
-	local info = UIDropDownMenu_CreateInfo()
-	local availableActivities = Funcs:GetAvailableActivities(dungeonCategoryId);
-
-	for i=1,#dungeonNames do
-		info.text, info.checked = dungeonNames[i], dungeonQueue.dungeonName == dungeonNames[i]
-		info.menuList = i
-		info.func = self.SetValue
-		info.arg1 = dungeonNames[i]
-
-		if DungeonGrindr:TableContainsValue(availableActivities, dungeonIDs.heroic[dungeonNames[i]]) then
-			UIDropDownMenu_AddButton(info)
-		end
-	end
-end)
-
-function dropDown:SetValue(newValue)
-	dungeonQueue.dungeonName = newValue
-	dungeonQueue.dungeonId = dungeonIDs.heroic[newValue]
+function DungeonGrindr:SelectActivityId(activityId) 
+	local activityInfo = C_LFGList.GetActivityInfoTable(activityId);
+	dungeonQueue.dungeonName = activityInfo.shortName
+	dungeonQueue.dungeonId = activityId
 	DungeonGrindr:DebugPrint("dungeonId: " .. dungeonQueue.dungeonId)
 	DungeonGrindr:DebugPrint("rolecheckState: " .. dungeonQueue.roleCheckState)
 	
@@ -764,11 +732,9 @@ function dropDown:SetValue(newValue)
 	if dungeonQueue.roleCheckState == roleCheckEnum.complete then 
 		queueButton:Show()
 	end
-	
-	UIDropDownMenu_SetText(dropDown, "HC: " .. newValue)	
-	CloseDropDownMenus()
 end
 
+-- UI BEGIN
 queueButton:RegisterForClicks("AnyUp")
 queueButton:SetScript("OnClick", function(self) 
 	if dungeonQueue.dungeonId == nil then DungeonGrindr:PrettyPrint("You need to select a dungeon") return end
@@ -856,3 +822,193 @@ closeButton:SetScript("OnClick", function(self)
 end)
 --- UIEND
 -- UI END
+
+
+
+
+-- TEST
+function _LFGBrowseActivityDropDown_Initialize(self, level, menuList)
+	-- If we're a submenu, just display that.
+	if (menuList) then
+		for _, buttonInfo in pairs(menuList) do
+			UIDropDownMenu_AddButton(buttonInfo, level);
+		end
+		return;
+	end
+
+	-- If we're not a submenu, we need to generate the full menu from the top.
+	local selectedType = dungeonCategoryId -- Default to dungeonType
+
+	if ( selectedType > 0 ) then
+		UIDropDownMenu_EnableDropDown(self);
+		local activities = C_LFGList.GetAvailableActivities(selectedType);
+
+		if (#activities > 0) then
+			local organizedActivities = LFGUtil_OrganizeActivitiesByActivityGroup(activities);
+			local activityGroupIDs = GetKeysArray(organizedActivities);
+			LFGUtil_SortActivityGroupIDs(activityGroupIDs);
+
+			for _, activityGroupID in ipairs(activityGroupIDs) do
+				local activityIDs = organizedActivities[activityGroupID];
+				if (activityGroupID == 0) then
+					-- Free-floating activities (no group)
+					local buttonInfo = UIDropDownMenu_CreateInfo();
+					buttonInfo.func = _LFGBrowseActivityButton_OnClick;
+					buttonInfo.owner = self;
+					buttonInfo.keepShownOnClick = true;
+					buttonInfo.classicChecks = true;
+
+					for _, activityID in pairs(activityIDs) do
+						local activityInfo = C_LFGList.GetActivityInfoTable(activityID);
+
+						buttonInfo.text = activityInfo.shortName;
+						buttonInfo.value = activityID;
+						buttonInfo.checked = function(self)
+							return _LFGBrowseActivityDropDown_ValueIsSelected(activityDropdown, self.value);
+						end;
+						UIDropDownMenu_AddButton(buttonInfo, level);
+					end
+				else
+					-- Grouped activities.
+					local groupButtonInfo = UIDropDownMenu_CreateInfo();
+					groupButtonInfo.func = function(self) print("did click groupButton") end; --_LFGBrowseActivityGroupButton_OnClick;
+					groupButtonInfo.owner = self;
+					groupButtonInfo.text = C_LFGList.GetActivityGroupInfo(activityGroupID);
+					groupButtonInfo.value = activityGroupID;
+					groupButtonInfo.notCheckable = true
+
+
+					if (#activityGroupIDs == 1) then -- If we only have one activityGroup, do everything in one menu.
+						UIDropDownMenu_AddButton(groupButtonInfo, level);
+
+						for _, activityID in pairs(activityIDs) do
+							local activityInfo = C_LFGList.GetActivityInfoTable(activityID);
+							local buttonInfo = UIDropDownMenu_CreateInfo();
+							buttonInfo.func = _LFGBrowseActivityButton_OnClick;
+							buttonInfo.owner = self;
+							buttonInfo.keepShownOnClick = true;
+							buttonInfo.classicChecks = true;
+
+							buttonInfo.text = "  "..activityInfo.shortName; -- Extra spacing to "indent" this from the group title.
+							buttonInfo.value = activityID;
+							buttonInfo.checked = function(self)
+								return _LFGBrowseActivityDropDown_ValueIsSelected(activityDropdown, self.value);
+							end;
+
+							UIDropDownMenu_AddButton(buttonInfo, level);
+						end
+					else -- If we have more than one group, do submenus.
+						groupButtonInfo.hasArrow = true;
+						groupButtonInfo.menuList = {};
+
+						for _, activityID in pairs(activityIDs) do
+							local activityInfo = C_LFGList.GetActivityInfoTable(activityID);
+							local buttonInfo = UIDropDownMenu_CreateInfo();
+							buttonInfo.func = _LFGBrowseActivityButton_OnClick;
+							buttonInfo.owner = self;
+							buttonInfo.keepShownOnClick = true;
+							buttonInfo.classicChecks = true;
+
+							buttonInfo.text = activityInfo.shortName;
+							buttonInfo.value = activityID;
+							buttonInfo.checked = function(self)
+								return _LFGBrowseActivityDropDown_ValueIsSelected(activityDropdown, self.value);
+							end;
+							tinsert(groupButtonInfo.menuList, buttonInfo);
+						end
+
+						UIDropDownMenu_AddButton(groupButtonInfo, level);
+					end
+				end
+			end
+		end
+	else
+		_LFGBrowseActivityDropDown_ValueReset(self);
+		UIDropDownMenu_DisableDropDown(self);
+		UIDropDownMenu_ClearAll(self);
+	end
+
+	_LFGBrowseActivityDropDown_UpdateHeader(self);
+end
+
+function _LFGBrowseActivityButton_OnClick(self)  
+	_LFGBrowseActivityDropDown_ValueToggleSelected(self.owner, self.value);
+	UIDropDownMenu_RefreshAll(self.owner, true);
+	_LFGBrowseActivityDropDown_UpdateHeader(self.owner)
+	CloseDropDownMenus()
+end
+
+function _LFGBrowseActivityDropDown_ValueIsSelected(self, value)
+	return tContains(self.selectedValues, value);
+end
+
+function _LFGBrowseActivityDropDown_ValueReset(self)
+	wipe(self.selectedValues);
+end
+
+function _LFGBrowseActivityDropDown_ValueToggleSelected(self, value)
+	_LFGBrowseActivityDropDown_ValueSetSelected(self, value, not _LFGBrowseActivityDropDown_ValueIsSelected(self, value));
+end
+
+function _LFGBrowseActivityDropDown_ValueSetSelected(self, value, selected) 
+	if (selected) then
+		if (not tContains(self.selectedValues, value)) then
+			wipe(self.selectedValues);
+			tinsert(self.selectedValues, value);
+			DungeonGrindr:SelectActivityId(value)
+		end
+	else
+		tDeleteItem(self.selectedValues, value);
+	end
+end
+
+function _LFGBrowseActivityDropDown_IsAnyValueSelectedForActivityGroup(self, activityGroupID)
+	local selectedType = dungeonCategoryId;
+
+	if ( selectedType > 0 ) then
+		local activities = C_LFGList.GetAvailableActivities(selectedType);
+		for i=1, #activities do
+			if (LFGUtil_GetActivityGroupForActivity(activities[i]) == activityGroupID) then
+				if (_LFGBrowseActivityDropDown_ValueIsSelected(self, activities[i])) then
+					return true;
+				end
+			end
+		end
+	end
+
+	return false;
+end
+
+function _LFGBrowseActivityGroupButton_OnClick(self)
+	_LFGBrowseActivityDropDown_SetAllValuesForActivityGroup(self.owner, self.value, not _LFGBrowseActivityDropDown_IsAnyValueSelectedForActivityGroup(self.owner, self.value));
+	UIDropDownMenu_Refresh(self.owner, true);
+	_LFGBrowseActivityDropDown_UpdateHeader(self.owner);
+end
+
+function _LFGBrowseActivityDropDown_SetAllValuesForActivityGroup(self, activityGroupID, selected)
+	local selectedType = dungeonCategoryId;
+
+	if ( selectedType > 0 ) then
+		local activities = C_LFGList.GetAvailableActivities(selectedType);
+		for i=1, #activities do
+			if (LFGUtil_GetActivityGroupForActivity(activities[i]) == activityGroupID) then
+				_LFGBrowseActivityDropDown_ValueSetSelected(self, activities[i], selected);
+			end
+		end
+	end
+end
+
+function _LFGBrowseActivityDropDown_UpdateHeader(self)
+	if #self.selectedValues == 0 then
+		UIDropDownMenu_SetText(self, LFGBROWSE_ACTIVITY_HEADER_DEFAULT);
+	elseif #self.selectedValues == 1 then
+		local activityInfo = C_LFGList.GetActivityInfoTable(self.selectedValues[1]);
+		if self.selectedValues[1] > 1120 then 
+			UIDropDownMenu_SetText(self, "HC: " .. activityInfo.fullName);
+		else 
+			UIDropDownMenu_SetText(self, activityInfo.fullName);
+		end
+	else
+		UIDropDownMenu_SetText(self, string.format(LFGBROWSE_ACTIVITY_HEADER, #self.selectedValues));
+	end
+end
