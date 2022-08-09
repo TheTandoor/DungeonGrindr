@@ -424,7 +424,6 @@ function DungeonGrindr:CachePlayerIfFits(dungeonQueue, groupToInvite, resultID)
 	elseif soloRoleDPS == true and dungeonQueue.needs.dps > 0 and DungeonGrindr:ValidateRoleIsLogical(className, "DAMAGER") == true then	
 		groupToInvite.dps[dungeonQueue.needs.dps] = name
 		roleFrames.nameFrames.dps[dungeonQueue.needs.dps].text:SetText(name)
-		
 		dungeonQueue.needs.dps = dungeonQueue.needs.dps - 1
 	end
 end
@@ -438,7 +437,7 @@ function DungeonGrindr:ValidateRoleIsLogical(className, role)
 	end
 	
 	if role == "DAMAGER" and class == "warrior" then
-		return not DungeonGrindrUI.framesCollection.checkBoxes.blackList:GetChecked()
+		return DungeonGrindrUI.framesCollection.checkBoxes.blackList:GetChecked() == false
 	end
 
 	return true
@@ -671,7 +670,7 @@ function DungeonGrindr:FillGroupFor(dungeonId)
 	else
 		DungeonGrindr:PrettyPrint("Joined queue for " .. tostring(dungeonQueue.dungeonName))
 	end
-	
+	DungeonGrindr:JoinGroupFinder(dungeonQueue)
 	DungeonGrindr:Retry(dungeonQueue)
 end
 
@@ -681,11 +680,10 @@ function DungeonGrindr:Retry(dungeonQueue)
 	
 	Funcs:Search(dungeonCategoryId, { dungeonQueue.dungeonId });
 	
-	if (Funcs:HasActiveEntryInfo()) then
+	if (Funcs:HasActiveEntryInfo()) then	
 		LFGParentFrame_SearchActiveEntry();
 	end
 end
-
 
 function DungeonGrindr:Init() 
 	roleFrames.player.texture:SetTexCoord(GetTexCoordsForRole(GetTalentGroupRole(GetActiveTalentGroup())))
@@ -711,6 +709,10 @@ function DungeonGrindr:ChatCommands(msg)
 	elseif args[1] == "debug" then
 		DEBUG = not DEBUG
 		DungeonGrindr:PrettyPrint("Debugging: " .. tostring(DEBUG))
+	elseif args[1] == "dump" then
+		DEBUG = true
+		DungeonGrindr:DebugPrint("GroupToInvite: " .. groupToInvite.tank .. ":" .. groupToInvite.healer .. ":" .. groupToInvite.dps[1] .. ":" .. groupToInvite.dps[2] .. ":" .. groupToInvite.dps[3] )
+		DungeonGrindr:DebugPrint("dungeonQueue.needs: " .. dungeonQueue.needs.tanks .. ":" .. dungeonQueue.needs.healers .. ":" .. dungeonQueue.needs.dps )
 	elseif args[1] == "spoof" then
 		SPOOFING = true
 		DEBUG = true
