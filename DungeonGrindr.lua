@@ -2,6 +2,7 @@ local addonName, T = ...;
 
 local DungeonGrindrUI = T.DungeonGrindrUI;
 local Funcs = T.Funcs;
+local dataStore = T.DungeonGrindrDataStore;
 
 local activityDropdown = DungeonGrindrUI.framesCollection.dropDowns.dungeonDropDown
 local boxFrame = DungeonGrindrUI.framesCollection.boxFrame
@@ -11,7 +12,7 @@ local leaveQueueButton = DungeonGrindrUI.framesCollection.buttons.leaveQueue
 local closeButton = DungeonGrindrUI.framesCollection.buttons.close
 local inviteGroupButton = DungeonGrindrUI.framesCollection.buttons.inviteGroup
 local roleCheckButton = DungeonGrindrUI.framesCollection.buttons.roleCheck
-
+local settingsButton = DungeonGrindrUI.framesCollection.buttons.settings
 local roleFrames = DungeonGrindrUI.framesCollection.roleFrames
 
 activityDropdown.selectedValues = {};
@@ -429,6 +430,8 @@ function DungeonGrindr:CachePlayerIfFits(dungeonQueue, groupToInvite, resultID)
 end
 
 function DungeonGrindr:ValidateRoleIsLogical(className, role) 
+	if dataStore:GetExcludeMemeSpecs() == true then return true end
+
 	local class = string.lower(className)
 	if role == "TANK" then
 		return class == "paladin" or class == "death knight" or class == "warrior" or class == "druid"
@@ -437,43 +440,42 @@ function DungeonGrindr:ValidateRoleIsLogical(className, role)
 	end
 	
 	if role == "DAMAGER" and class == "warrior" then
-		return DungeonGrindrUI.framesCollection.checkBoxes.blackList:GetChecked() == false
+		return dataStore:GetExcludeMemeSpecs() == false
 	end
 
 	return true
 end
 
-function DungeonGrindr:InviteParty(dungeonId, groupToInvite, attemptCounter)
+function DungeonGrindr:InviteParty(dungeonId, groupToInvite)
 	DungeonGrindr:PrettyPrint("Your Party is Ready!")
 	TimeSinceLastInvite = 0
 
-	DungeonGrindr:Invite(groupToInvite.tank, "TANK", dungeonId, attemptCounter); 
-	DungeonGrindr:Invite(groupToInvite.healer, "HEALER", dungeonId, attemptCounter);
-	DungeonGrindr:Invite(groupToInvite.dps[1], "DPS", dungeonId, attemptCounter);
-	DungeonGrindr:Invite(groupToInvite.dps[2], "DPS", dungeonId, attemptCounter);
-	DungeonGrindr:Invite(groupToInvite.dps[3], "DPS", dungeonId, attemptCounter);
+	DungeonGrindr:Invite(groupToInvite.tank, "TANK", dungeonId); 
+	DungeonGrindr:Invite(groupToInvite.healer, "HEALER", dungeonId);
+	DungeonGrindr:Invite(groupToInvite.dps[1], "DPS", dungeonId);
+	DungeonGrindr:Invite(groupToInvite.dps[2], "DPS", dungeonId);
+	DungeonGrindr:Invite(groupToInvite.dps[3], "DPS", dungeonId);
 	
-	if attemptCounter >= 2 then return end
-	
-	local nextAttempt = attemptCounter + 1
-	C_Timer.After(15, function() DungeonGrindr:InviteParty(dungeonQueue.dungeonId, groupToInvite, nextAttempt) end)
+	if dataStore:GetAutoReinvite() == false then return end
+	C_Timer.After(15, function()
+		DungeonGrindr:Reinvite(groupToInvite.tank, "TANK", dungeonId); 
+		DungeonGrindr:Reinvite(groupToInvite.healer, "HEALER", dungeonId);
+		DungeonGrindr:Reinvite(groupToInvite.dps[1], "DPS", dungeonId);
+		DungeonGrindr:Reinvite(groupToInvite.dps[2], "DPS", dungeonId);
+		DungeonGrindr:Reinvite(groupToInvite.dps[3], "DPS", dungeonId);
+	end)
 end
 
-function DungeonGrindr:Invite(player, role, dungeonId, attemptCounter)
+function DungeonGrindr:Invite(player, role, dungeonId)
 	local activityInfo = Funcs:GetActivityInfoTable(dungeonId)
  
 	local firstMsg = "[DungeonGrindr] You are being invited to " .. activityInfo.fullName .. " as a " .. role
 	local secondMsg = "[DungeonGrindr] If you are in a party, please drop group. You will be invited again in 15s"
-	
-	if attemptCounter > 1 then 
-		firstMsg = "[DungeonGrindr] You are being reinvited to " .. activityInfo.fullName .. " as a " .. role
-		secondMsg = nil
-	end
- 
+
 	if player == "player" or player == UnitName("player") then 
 		if DEBUG then 
 			SendChatMessage(firstMsg, "WHISPER", nil, UnitName("player"))
-			if secondMsg ~= nil then 
+			if dataStore:GetAutoReinvite() == true then 
 				SendChatMessage(secondMsg, "WHISPER", nil, UnitName("player"))
 			end
 		end
@@ -495,9 +497,41 @@ function DungeonGrindr:Invite(player, role, dungeonId, attemptCounter)
 	DungeonGrindr:DebugPrint("[DungeonGrindr] auto invited " .. player .." to " .. activityInfo.fullName .. " as a " .. role)
 	InviteUnit(player)
 	SendChatMessage(firstMsg, "WHISPER", nil, player)
-	if secondMsg ~= nil then 
+	
+	if dataStore:GetAutoReinvite() == true then 
 		SendChatMessage(secondMsg, "WHISPER", nil, player)
 	end
+end
+
+function DungeonGrindr:Reinvite(player, role, dungeonId)
+	if dataStore:GetAutoReinvite() == false then return end
+	
+	local activityInfo = Funcs:GetActivityInfoTable(dungeonId)
+ 
+	local firstMsg = "[DungeonGrindr] You are being reinvited to " .. activityInfo.fullName .. " as a " .. role
+ 
+	if player == "player" or player == UnitName("player") then 
+		if DEBUG then 
+			SendChatMessage(firstMsg, "WHISPER", nil, UnitName("player"))
+		end
+		return
+	end
+	
+	-- Don't message people already in the group
+	for i = 1, GetNumGroupMembers() do
+		local partyIndex = "party"..i
+		local name = UnitName(partyIndex)
+		if name == player then return end
+	end
+	
+	if DEBUG then
+		DungeonGrindr:DebugPrint("[DungeonGrindr] auto invited " .. player .." to " .. activityInfo.fullName .. " as a " .. role)
+		return
+	end
+
+	DungeonGrindr:DebugPrint("[DungeonGrindr] auto invited " .. player .." to " .. activityInfo.fullName .. " as a " .. role)
+	InviteUnit(player)
+	SendChatMessage(firstMsg, "WHISPER", nil, player)
 end
 
 function DungeonGrindr:LeaveQueue() 
@@ -837,7 +871,7 @@ end)
 
 inviteGroupButton:RegisterForClicks("AnyUp")
 inviteGroupButton:SetScript("OnClick", function(self) 	
-	DungeonGrindr:InviteParty(dungeonQueue.dungeonId, groupToInvite, 1);
+	DungeonGrindr:InviteParty(dungeonQueue.dungeonId, groupToInvite);
 end)
  
 refreshFrame:RegisterForClicks("AnyUp")
@@ -913,9 +947,17 @@ closeButton:RegisterForClicks("AnyUp")
 closeButton:SetScript("OnClick", function(self) 
 	boxFrame:Hide()
 end)
+
+settingsButton:RegisterForClicks("AnyUp")
+settingsButton:SetScript("OnClick", function(self) 
+	if T.DungeonGrindrSettings.frame:IsShown() then
+		T.DungeonGrindrSettings.frame:Hide()
+	else
+		T.DungeonGrindrSettings.frame:Show()
+	end
+end)
 --- UIEND
 -- UI END
-
 
 
 

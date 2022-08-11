@@ -177,6 +177,11 @@ closeButton:SetSize(20,20)
 closeButton:SetPoint("TOPRIGHT", boxFrame, "TOPRIGHT", 0,0)
 closeButton:SetText("X")
 
+local settingsButton = CreateFrame("Button", nil, boxFrame, "UIPanelButtonTemplate");
+settingsButton:SetSize(20,20)
+settingsButton:SetPoint("TOPRIGHT", closeButton, "TOPLEFT", 0,0)
+settingsButton:SetText("S")
+
 
 local playerRoleFrame = CreateFrame("Button", "DGPlayerTalentFrameRoleButton", boxFrame)
 playerRoleFrame:SetSize(30, 30)
@@ -187,27 +192,15 @@ playerRoleFrame:SetPoint("TOPLEFT", 0, 0, "TOPLEFT")
 playerRoleFrame.texture:SetTexture("Interface\\LFGFrame\\UI-LFG-ICON-ROLES");
 playerRoleFrame.texture:SetTexCoord(GetTexCoordsForRole("DAMAGER"))
 
-
-local blackListWarriorsCheckbox = CreateFrame("CheckButton", nil, boxFrame, "UICheckButtonTemplate")
-blackListWarriorsCheckbox:SetPoint("TOPLEFT", playerRoleFrame, "TOPRIGHT", 5, 0)
-blackListWarriorsCheckbox.text = blackListWarriorsCheckbox:CreateFontString(nil,"OVERLAY", "GameFontNormal") 
-blackListWarriorsCheckbox.text:SetPoint("LEFT", blackListWarriorsCheckbox, "RIGHT", 0, 0)
-blackListWarriorsCheckbox.text:SetText("Exclude Warrior DPS")
-blackListWarriorsCheckbox:SetChecked(true)
-
 local buttons = { 
 	refresh = refreshFrame,
 	queue = queueButton,
 	leaveQueue = leaveQueueButton,
 	close = closeButton,
+	settings = settingsButton,
 	inviteGroup = inviteGroupButton,
 	roleCheck = roleCheckButton
 }
-
-local checkBoxes = { 
-	blackList = blackListWarriorsCheckbox
-}
-
 
 local dropDowns = {
 	dungeonDropDown = activityDropdown,
@@ -234,5 +227,4 @@ T.DungeonGrindrUI.framesCollection = {
 	boxFrame = boxFrame,
 	buttons = buttons,
 	dropDowns = dropDowns,
-	checkBoxes = checkBoxes,
 }
