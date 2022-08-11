@@ -40,6 +40,7 @@ local dungeonQueue = {
 	dungeonId = nil,
 	dungeonName = "",
 	inQueue = false,
+	queuePopTimerExpired = false,
 	needs = {
 		tanks = 1,
 		healers = 1,
@@ -54,6 +55,8 @@ local groupToInvite = {
 	healer = "",
 	dps = { "", "", "" }
 }
+
+local requireRefreshOnFullGroupAfter = 15
 
 -- DEBUG BEGIN
 local DEBUG = false
@@ -300,6 +303,13 @@ function DungeonGrindr:InvalidateUI(groupToInvite, dungeonQueue)
 		boxFrame:Show()
 		inviteGroupButton:Show()
 		refreshFrame:Hide()
+		
+		-- Start timer to invalidate the invite option if the player takes too long to respond
+		C_Timer.After(requireRefreshOnFullGroupAfter, function()
+			inviteGroupButton:Hide()
+			refreshFrame:Show() 
+			dungeonQueue.queuePopTimerExpired = true
+		end)
 	else 
 		inviteGroupButton:Hide()
 	end
@@ -313,7 +323,7 @@ function DungeonGrindr:InvalidateUI(groupToInvite, dungeonQueue)
 	if dungeonQueue.inQueue == false then 
 		DungeonGrindrUI.framesCollection.titleFrame.text:SetText("")
 	end
-
+	
 	DungeonGrindr:RefreshDropdown()
 	DungeonGrindr:PrintGroupCache(groupToInvite)
 end
@@ -554,6 +564,7 @@ function DungeonGrindr:LeaveQueue()
 	dungeonQueue.dungeonId = dungeonQueue.dungeonId
 	dungeonQueue.dungeonName = dungeonQueue.dungeonName
 	dungeonQueue.inQueue = false
+	dungeonQueue.queuePopTimerExpired = false
 	dungeonQueue.needs.tanks = 1
 	dungeonQueue.needs.healers = 1
 	dungeonQueue.needs.dps = 3
@@ -698,6 +709,7 @@ function DungeonGrindr:FillGroupFor(dungeonId)
 	dungeonQueue.needs.healers = 1 - groupComp.healers
 	dungeonQueue.needs.dps = 3 - groupComp.dps
 	dungeonQueue.inQueue = true
+	dungeonQueue.queuePopTimerExpired = false
 	
 	if IsInGroup() then
 		SendChatMessage("[DungeonGrindr] Joined queue for " .. tostring(dungeonQueue.dungeonName), "PARTY", nil, nil)
@@ -831,7 +843,10 @@ frame:SetScript("OnUpdate", function(self, elapsed)
 		
 		local isGroupFull = (dungeonQueue.needs.tanks + dungeonQueue.needs.healers + dungeonQueue.needs.dps) <= 0
 		
-		if dungeonQueue.inQueue == false or isGroupFull == true then  refreshFrame:Hide() return end
+		if dungeonQueue.inQueue == false or (isGroupFull == true and dungeonQueue.queuePopTimerExpired == false) or inviteGroupButton:IsShown() then
+			refreshFrame:Hide()
+			return
+		end
 		DungeonGrindr:DebugPrint("OnUpdate Queue search")
 		refreshFrame:Show()
 	end
