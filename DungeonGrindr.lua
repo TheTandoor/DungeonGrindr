@@ -260,7 +260,7 @@ DungeonGrindr:SetScript("OnEvent", function(f, event)
 			local resultID = results[index]
 			local searchResultInfo = Funcs:LFGListGetSearchResultInfo(resultID);
 			
-			if searchResultInfo.isDelisted == true then
+			if searchResultInfo.isDelisted == true or searchResultInfo.numMembers > 1 then
 				DungeonGrindr:RemovePlayerForDelisted(dungeonQueue, groupToInvite, resultID)
 			end
 
@@ -361,6 +361,11 @@ end
 
 function DungeonGrindr:IsPlayerInQueueAsRole(playerName, role, results)
 	if playerName == UnitName("player") or playerName == player then return true end
+	
+	
+	-- Check to see if a player has added players to their group but is still in queue
+	local searchResultInfo = Funcs:LFGListGetSearchResultInfo(resultID);
+	if searchResultInfo.numMembers > 1 then return false end
 	
 	local role = string.lower(role);
 	for index = 1, #results do
