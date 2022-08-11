@@ -4,6 +4,7 @@ T.DungeonGrindrUI = {}
 local boxFrame = CreateFrame("Frame", "DungeonGrindrMain", UIParent)
 boxFrame:SetSize(420, 130)
 boxFrame:SetMovable(true)
+boxFrame:SetFrameLevel(15)
 local t = boxFrame:CreateTexture(nil,"BACKGROUND")
 t:SetAllPoints(boxFrame)
 boxFrame.texture = t
@@ -182,6 +183,11 @@ settingsButton:SetSize(20,20)
 settingsButton:SetPoint("TOPRIGHT", closeButton, "TOPLEFT", 0,0)
 settingsButton:SetText("S")
 
+local helpButton = CreateFrame("Button", nil, boxFrame, "UIPanelButtonTemplate");
+helpButton:SetSize(20,20)
+helpButton:SetPoint("TOPRIGHT", settingsButton, "TOPLEFT", 0,0)
+helpButton:SetText("?")
+
 
 local playerRoleFrame = CreateFrame("Button", "DGPlayerTalentFrameRoleButton", boxFrame)
 playerRoleFrame:SetSize(30, 30)
@@ -198,6 +204,7 @@ local buttons = {
 	leaveQueue = leaveQueueButton,
 	close = closeButton,
 	settings = settingsButton,
+	help = helpButton,
 	inviteGroup = inviteGroupButton,
 	roleCheck = roleCheckButton
 }

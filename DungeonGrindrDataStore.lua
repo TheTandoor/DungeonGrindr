@@ -15,6 +15,13 @@ frame:SetScript("OnEvent", function(f, event)
 		T.DungeonGrindrDataStore:SetAutoReinvite(true)
 	end
 	
+	if T.DungeonGrindrDataStore:GetHelpShown() == nil then
+		T.DungeonGrindrDataStore:SetHelpShown(false)
+	end
+	
+	if T.DungeonGrindrDataStore:GetIgnoreNewPlayers() == nil then
+		T.DungeonGrindrDataStore:SetIgnoreNewPlayers(true)
+	end
 	print("DungeonGrindrDataStore Loaded")
 end)
 
@@ -35,5 +42,24 @@ end
 function T.DungeonGrindrDataStore:SetAutoReinvite(value)
 	if type(value) ~= "boolean" then return end
 	_G.DGautoReinvite = value
+end
+
+function T.DungeonGrindrDataStore:GetHelpShown() 
+	return _G.DGhelpShown
+end
+
+function T.DungeonGrindrDataStore:SetHelpShown(value)
+	if type(value) ~= "boolean" then return end
+	_G.DGhelpShown = value
+end
+
+
+function T.DungeonGrindrDataStore:GetIgnoreNewPlayers() 
+	return _G.DGignoreNewPlayers
+end
+
+function T.DungeonGrindrDataStore:SetIgnoreNewPlayers(value)
+	if type(value) ~= "boolean" then return end
+	_G.DGignoreNewPlayers = value
 end
 -- END PUBLIC API

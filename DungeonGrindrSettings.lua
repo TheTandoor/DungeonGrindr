@@ -1,18 +1,18 @@
 local addonName, T = ...;
 
 local dataStore = T.DungeonGrindrDataStore;
+local UI = T.DungeonGrindrUI
 
 T.DungeonGrindrSettings = {}
-T.DungeonGrindrSettings.frame = CreateFrame("frame", "DungeonGrindrSettings", UIParent)
+local mainFrame = T.DungeonGrindrUI.framesCollection.boxFrame
+T.DungeonGrindrSettings.frame = CreateFrame("frame", "DungeonGrindrSettings", mainFrame)
 
 local frame = T.DungeonGrindrSettings.frame
 frame:SetSize(300, 300)
-frame:SetMovable(true)
-
 local t = frame:CreateTexture(nil,"BACKGROUND")
 t:SetAllPoints(frame)
 frame.texture = t
-frame:SetPoint("CENTER",0,0)
+frame:SetPoint("LEFT", mainFrame, "RIGHT", 10,0)
 frame.texture:SetColorTexture(0, 0, 0, 0.4)
 frame:EnableMouse(true)
 frame:SetScript("OnMouseDown", function(self, button)
@@ -95,12 +95,32 @@ autoReinviteCheckbox:SetScript("OnLeave", function(self, motion)
 	GameTooltip:Hide()
 end)
 
--- ON LOADED
-local frame = CreateFrame("frame")
-frame:RegisterEvent("ADDON_LOADED");
+local ignoreNewPlayersCheckbox = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
+ignoreNewPlayersCheckbox:SetPoint("TOPLEFT", autoReinviteCheckbox, "BOTTOMLEFT", 0, -5)
+ignoreNewPlayersCheckbox.text = ignoreNewPlayersCheckbox:CreateFontString(nil,"OVERLAY", "GameFontNormal") 
+ignoreNewPlayersCheckbox.text:SetPoint("LEFT", ignoreNewPlayersCheckbox, "RIGHT", 0, 0)
+ignoreNewPlayersCheckbox.text:SetText("Ignore `New Players`")
+ignoreNewPlayersCheckbox:SetScript("OnClick", function(self)
+	dataStore:SetIgnoreNewPlayers(self:GetChecked())
+end)
 
-frame:SetScript("OnEvent", function(f, event)
+ignoreNewPlayersCheckbox:SetScript("OnEnter", function(self, motion)
+		GameTooltip:SetOwner(ignoreNewPlayersCheckbox, "ANCHOR_TOP")
+		GameTooltip:ClearLines()
+		GameTooltip:AddLine("Never try to invite a player that is flagged as `New Player Friendly` in the LFG tool as they may be unskilled")
+		GameTooltip:Show()
+end)
+ignoreNewPlayersCheckbox:SetScript("OnLeave", function(self, motion)
+	GameTooltip:Hide()
+end)
+
+-- ON LOADED
+local loadFrame = CreateFrame("frame")
+loadFrame:RegisterEvent("ADDON_LOADED");
+
+loadFrame:SetScript("OnEvent", function(f, event)
 	allowMemeSpecsCheckbox:SetChecked(dataStore:GetExcludeMemeSpecs())
 	autoReinviteCheckbox:SetChecked(dataStore:GetAutoReinvite())
+	ignoreNewPlayersCheckbox:SetChecked(dataStore:GetIgnoreNewPlayers())
 	print("DungeonGrindrSettings Loaded")
 end)

@@ -4,11 +4,12 @@
 ## Notes: When do we get RFD?
 ## Version: 0.1
 ## RequiredDeps:
-## SavedVariables: DGexcludeMemeSpecs, DGautoReinvite
+## SavedVariables: DGexcludeMemeSpecs, DGautoReinvite, DGhelpShown
 
 # Main
 DungeonGrindrDataStore.lua
+DungeonGrindrUI.lua
 DungeonGrindrBlizzFuncs.lua
 DungeonGrindrSettings.lua
-DungeonGrindrUI.lua
+DungeonGrindrHelp.lua
 DungeonGrindr.lua

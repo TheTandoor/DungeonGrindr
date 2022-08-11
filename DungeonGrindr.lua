@@ -10,6 +10,7 @@ local queueButton = DungeonGrindrUI.framesCollection.buttons.queue
 local refreshFrame = DungeonGrindrUI.framesCollection.buttons.refresh
 local leaveQueueButton = DungeonGrindrUI.framesCollection.buttons.leaveQueue
 local closeButton = DungeonGrindrUI.framesCollection.buttons.close
+local helpButton = DungeonGrindrUI.framesCollection.buttons.help
 local inviteGroupButton = DungeonGrindrUI.framesCollection.buttons.inviteGroup
 local roleCheckButton = DungeonGrindrUI.framesCollection.buttons.roleCheck
 local settingsButton = DungeonGrindrUI.framesCollection.buttons.settings
@@ -18,7 +19,6 @@ local roleFrames = DungeonGrindrUI.framesCollection.roleFrames
 activityDropdown.selectedValues = {};
 
 DungeonGrindr = CreateFrame("frame");
-
 
 DungeonGrindr:RegisterEvent("PLAYER_ROLES_ASSIGNED"); -- Fired when all players have selected a role via InitiateRolePoll or the poll times out
 DungeonGrindr:RegisterEvent("GROUP_ROSTER_UPDATE"); -- Fires when anyone joins/leaves/rejects or is moved in a party
@@ -361,18 +361,17 @@ end
 
 function DungeonGrindr:IsPlayerInQueueAsRole(playerName, role, results)
 	if playerName == UnitName("player") or playerName == player then return true end
-	
-	
-	-- Check to see if a player has added players to their group but is still in queue
-	local searchResultInfo = Funcs:LFGListGetSearchResultInfo(resultID);
-	if searchResultInfo.numMembers > 1 then return false end
-	
+		
 	local role = string.lower(role);
 	for index = 1, #results do
 		local resultID = results[index]
 		local name, _, _, _, _, _, soloRoleTank, soloRoleHealer, soloRoleDPS = Funcs:GetSearchResultLeaderInfo(resultID);
 	
 		if name == playerName then
+			-- Check to see if a player has added players to their group but is still in queue
+			local searchResultInfo = Funcs:LFGListGetSearchResultInfo(resultID);
+			if searchResultInfo.numMembers > 1 then return false end
+		
 			if role == "tank" then
 				return soloRoleTank
 			elseif role == "healer" then
@@ -421,7 +420,9 @@ function DungeonGrindr:RemovePlayerForDelisted(dungeonQueue, groupToInvite, resu
 end
 
 function DungeonGrindr:CachePlayerIfFits(dungeonQueue, groupToInvite, resultID)
-	local name, role, classFileName, className, level, areaName, soloRoleTank, soloRoleHealer, soloRoleDPS = Funcs:GetSearchResultLeaderInfo(resultID);
+	local name, role, classFileName, className, level, areaName, soloRoleTank, soloRoleHealer, soloRoleDPS, isNewPlayerFriendly = Funcs:GetSearchResultLeaderInfo(resultID);
+	
+	if isNewPlayerFriendly == true and dataStore:GetIgnoreNewPlayers() then return end
 	
 	-- Guard against duplicates 
 	if groupToInvite.tank == name or groupToInvite.healer == name then return end 
@@ -753,6 +754,9 @@ function DungeonGrindr:ChatCommands(msg)
 	end
     if args[1] == nil then
 		boxFrame:Show()
+	elseif args[1] == "help" then
+		dataStore:SetHelpShown(false)
+		T.DungeonGrindrHelp.frame:Show()
 	elseif args[1] == "hide" then
 		boxFrame:Hide()
 	elseif args[1] == "show" then
@@ -897,11 +901,11 @@ end)
 refreshFrame:RegisterForClicks("AnyUp")
 refreshFrame:SetScript("OnClick", function(self)
 	if self:IsShown() == true then 
-		DungeonGrindr:Retry(dungeonQueue)
 		self:Hide()
+		DungeonGrindr:Retry(dungeonQueue)
 	end
 end)
- 
+
 roleCheckButton:RegisterForClicks("AnyUp")
 roleCheckButton:SetScript("OnClick", function(self) 
 	-- Ignore presses while a check in progress
@@ -975,6 +979,12 @@ settingsButton:SetScript("OnClick", function(self)
 	else
 		T.DungeonGrindrSettings.frame:Show()
 	end
+end)
+
+helpButton:RegisterForClicks("AnyUp")
+helpButton:SetScript("OnClick", function(self) 
+	boxFrame:Hide()
+	T.DungeonGrindrHelp.frame:Show()
 end)
 --- UIEND
 -- UI END
