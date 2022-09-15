@@ -61,6 +61,7 @@ local requireRefreshOnFullGroupAfter = 15
 -- DEBUG BEGIN
 local DEBUG = false
 local DEBUGDUNGEONS = false
+local ROLE_BYPASS = true
 local SPOOFING = false
 
 function DungeonGrindr:DebugLFGList()
@@ -331,7 +332,7 @@ end
 function DungeonGrindr:EnsurePlayersStillInQueue(groupToInvite, dungeonQueue, results)
 	if groupToInvite.tank ~= "" then 
 		local playerName = groupToInvite.tank
-		if DungeonGrindr:IsPlayerInQueueAsRole(playerName, "tank", results) == false then
+		if DungeonGrindr:IsPlayerInQueueAsRole(playerName, "tank", results) == false and UnitInParty(playerName) ~= true then
 			dungeonQueue.needs.tank = 1
 			groupToInvite.tank = ""
 			DungeonGrindr:DebugPrint("Removing TANK for not in queue: " .. playerName)
@@ -340,7 +341,7 @@ function DungeonGrindr:EnsurePlayersStillInQueue(groupToInvite, dungeonQueue, re
 	
 	if groupToInvite.healer ~= "" then 
 		local playerName = groupToInvite.healer
-		if DungeonGrindr:IsPlayerInQueueAsRole(playerName, "healer", results) == false then
+		if DungeonGrindr:IsPlayerInQueueAsRole(playerName, "healer", results) == false and UnitInParty(playerName) ~= true then
 			dungeonQueue.needs.healer = 1
 			groupToInvite.healer = ""
 			DungeonGrindr:DebugPrint("Removing HEALER for not in queue: " .. playerName)
@@ -350,7 +351,7 @@ function DungeonGrindr:EnsurePlayersStillInQueue(groupToInvite, dungeonQueue, re
 	for index = 1, #groupToInvite.dps do
 		if groupToInvite.dps[index] ~= "" then
 			local playerName = groupToInvite.dps[index]
-			if DungeonGrindr:IsPlayerInQueueAsRole(playerName, "damager", results) == false then
+			if DungeonGrindr:IsPlayerInQueueAsRole(playerName, "damager", results) == false and UnitInParty(playerName) ~= true then
 				dungeonQueue.needs.dps = dungeonQueue.needs.dps + 1
 				groupToInvite.dps[index] = ""
 				DungeonGrindr:DebugPrint("Removing DPS #" ..tostring(index) .. " for not in queue: " .. playerName)
@@ -709,7 +710,7 @@ function DungeonGrindr:FillGroupFor(dungeonId)
 		DungeonGrindr:AddPlayerToGroupComp(groupComp, role)
 	end
 	DungeonGrindr:DebugPrint("---- Current Group: " .. groupComp["tanks"] .. ":" .. groupComp["healers"] .. ":" .. groupComp["dps"] .. " ----")
-	
+
 	dungeonQueue.dungeonId = dungeonId
 	dungeonQueue.needs.tanks = 1 - groupComp.tanks
 	dungeonQueue.needs.healers = 1 - groupComp.healers
@@ -873,7 +874,7 @@ function DungeonGrindr:SelectActivityId(activityId)
 	DungeonGrindr:DebugPrint("dungeonId: " .. dungeonQueue.dungeonId)
 	DungeonGrindr:DebugPrint("rolecheckState: " .. dungeonQueue.roleCheckState)
 	
-	if GetNumGroupMembers() == 0 then
+	if GetNumGroupMembers() == 0 or ROLE_BYPASS == true then
 		dungeonQueue.roleCheckState = roleCheckEnum.complete
 		queueButton:Show()		
 	else 
@@ -911,10 +912,10 @@ roleCheckButton:SetScript("OnClick", function(self)
 	-- Ignore presses while a check in progress
 	if dungeonQueue.roleCheckState == roleCheckEnum.inprogress then return end
 	
-	dungeonQueue.roleCheckState = roleCheckEnum.inprogress
 	dungeonQueue.roleCheckCount = 0
+	dungeonQueue.roleCheckState = roleCheckEnum.inprogress
 	
-	roleCheckButton:SetText("0 / " .. GetNumGroupMembers())
+	roleCheckButton:SetText(dungeonQueue.roleCheckCount .. " / " .. GetNumGroupMembers())
 	InitiateRolePoll()
 end)
 
@@ -1176,4 +1177,13 @@ function _LFGBrowseActivityDropDown_UpdateHeader(self)
 	else
 		UIDropDownMenu_SetText(self, string.format(LFGBROWSE_ACTIVITY_HEADER, #self.selectedValues));
 	end
+end
+
+
+
+
+
+-- FIX DBM error
+if RolePollPopup and RolePollPopup:IsEventRegistered("ROLE_POLL_BEGIN") == false then
+	RolePollPopup:RegisterEvent("ROLE_POLL_BEGIN")
 end

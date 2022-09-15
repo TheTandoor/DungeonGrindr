@@ -4,6 +4,7 @@
 ## Notes: When do we get RFD?
 ## Version: 0.1
 ## RequiredDeps:
+## OptionalDeps: DBM-Core
 ## SavedVariables: DGexcludeMemeSpecs, DGautoReinvite, DGhelpShown
 
 # Main
