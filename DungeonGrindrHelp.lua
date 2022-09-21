@@ -76,14 +76,15 @@ text1:SetFont("Fonts\\FRIZQT__.TTF", 11)
 text1:SetJustifyH("LEFT")
 text1:SetJustifyV("TOP")
 text1:SetPoint("TOPLEFT");
-text1:SetText("To use\n\n" ..
+text1:SetText("Type /dg to open\n\n" ..
+			  "To use\n\n" ..
 			  "Select a dungeon and repeatedly press `Refresh` until your group fills \n" ..
 			 "Macro `/click DungeonGrindrRefresh` into your abilities to auto refresh while you play the game \n" ..
 			 "Using the above /click you can close the addon and it will reopen when your group is ready \n" ..
 			 "If not all players accept your invites, simply requeue for the same dungeon \n\n\n")
 			 
 local text2Frame = CreateFrame("Frame", nil, frame);
-text2Frame:SetPoint("TOPLEFT", textFrame, "BOTTOMLEFT", 0, -40);
+text2Frame:SetPoint("TOPLEFT", textFrame, "BOTTOMLEFT", 0, -50);
 text2Frame:SetSize(700, 50);
 
 local text2 = text2Frame:CreateFontString(nil,"OVERLAY","GameFontNormal");
@@ -108,7 +109,7 @@ text3:SetJustifyH("LEFT")
 text3:SetJustifyV("TOP")
 text3:SetPoint("TOPLEFT");
 text3:SetText("Low level dungeons?\n" ..
-			 "Because of how 1-70 leveling changes and how hyper optimized the community, is players\n"..
+			 "Because of how 1-70 leveling changes and how hyper optimized the community is, some players\n"..
 			 "will actively avoid leveling in low level dungeons because there is no teleport in/out"
  )
 
