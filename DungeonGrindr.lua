@@ -32,7 +32,7 @@ DungeonGrindr:RegisterEvent("LFG_LIST_SEARCH_RESULT_UPDATED");
 
 local initCalled = false
 local roleCheckEnum = { none = "NONE", inprogress = "INPROGRESS", complete = "COMPLETE" }
-local queueStateEnum = { none = "NONE", inprogress = "INPROGRESS", complete = "COMPLETE" }
+local queueStateEnum = { none = "NONE", inprogress = "INPROGRESS", invitingGroup = "INVITINGGROUP", complete = "COMPLETE" }
 
 local dungeonQueue = {
 	roleCheckState = roleCheckEnum.none,
@@ -40,6 +40,7 @@ local dungeonQueue = {
 	dungeonId = nil,
 	dungeonName = "",
 	inQueue = false,
+	queueStatus = queueStateEnum.none,
 	queuePopTimerExpired = false,
 	needs = {
 		tanks = 1,
@@ -61,7 +62,7 @@ local requireRefreshOnFullGroupAfter = 15
 -- DEBUG BEGIN
 local DEBUG = false
 local DEBUGDUNGEONS = false
-local ROLE_BYPASS = true
+local ROLE_BYPASS = false
 local SPOOFING = false
 
 function DungeonGrindr:DebugLFGList()
@@ -192,10 +193,10 @@ DungeonGrindr:SetScript("OnEvent", function(f, event)
 	end
 	
 	if event == "PLAYER_ROLES_ASSIGNED" then 
-		dungeonQueue.roleCheckState = roleCheckEnum.complete
+		-- dungeonQueue.roleCheckState = roleCheckEnum.complete
 	end
 	
-	if event == "GROUP_ROSTER_UPDATE" and dungeonQueue.queueStatus == queueStateEnum.inprogress then	
+	if event == "GROUP_ROSTER_UPDATE" and dungeonQueue.queueStatus == queueStateEnum.inprogress then
 		DungeonGrindr:LeaveQueue()
 	end
 	
@@ -315,10 +316,15 @@ function DungeonGrindr:InvalidateUI(groupToInvite, dungeonQueue)
 		inviteGroupButton:Hide()
 	end
 
-	if (IsInGroup() and dungeonQueue.roleCheckState ~= roleCheckEnum.complete) or dungeonQueue.inQueue == true or dungeonQueue.dungeonId == nil then 
+	if (IsInGroup() and dungeonQueue.roleCheckState == roleCheckEnum.inprogress) or dungeonQueue.inQueue == true or dungeonQueue.dungeonId == nil then 
 		queueButton:Hide()
 	elseif dungeonQueue.dungeonId ~= nil and dungeonQueue.inQueue == false then 
-		queueButton:Show()
+		if IsInGroup() and dungeonQueue.roleCheckState == roleCheckEnum.none then
+			roleCheckButton:Show()
+			queueButton:Hide()
+		else
+			queueButton:Show()
+		end
 	end
 	
 	if dungeonQueue.inQueue == false then 
@@ -464,6 +470,7 @@ function DungeonGrindr:ValidateRoleIsLogical(className, role)
 end
 
 function DungeonGrindr:InviteParty(dungeonId, groupToInvite)
+	dungeonQueue.queueStatus = queueStateEnum.invitingGroup
 	DungeonGrindr:PrettyPrint("Your Party is Ready!")
 	TimeSinceLastInvite = 0
 
@@ -571,6 +578,7 @@ function DungeonGrindr:LeaveQueue()
 	dungeonQueue.dungeonId = dungeonQueue.dungeonId
 	dungeonQueue.dungeonName = dungeonQueue.dungeonName
 	dungeonQueue.inQueue = false
+	dungeonQueue.queueStatus = queueStateEnum.none
 	dungeonQueue.queuePopTimerExpired = false
 	dungeonQueue.needs.tanks = 1
 	dungeonQueue.needs.healers = 1
@@ -716,6 +724,7 @@ function DungeonGrindr:FillGroupFor(dungeonId)
 	dungeonQueue.needs.healers = 1 - groupComp.healers
 	dungeonQueue.needs.dps = 3 - groupComp.dps
 	dungeonQueue.inQueue = true
+	dungeonQueue.queueStatus = queueStateEnum.inprogress
 	dungeonQueue.queuePopTimerExpired = false
 	
 	if IsInGroup() then
@@ -895,7 +904,7 @@ queueButton:SetScript("OnClick", function(self)
 end)
 
 inviteGroupButton:RegisterForClicks("AnyUp")
-inviteGroupButton:SetScript("OnClick", function(self) 	
+inviteGroupButton:SetScript("OnClick", function(self) 
 	DungeonGrindr:InviteParty(dungeonQueue.dungeonId, groupToInvite);
 end)
  
