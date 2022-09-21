@@ -122,6 +122,6 @@ loadFrame:SetScript("OnEvent", function(f, event)
 		frame:Show()
 		dataStore:SetHelpShown(true)
 	end
-
+	loadFrame:UnregisterEvent("ADDON_LOADED")
 	print("DungeonGrindrHelp Loaded")
 end)

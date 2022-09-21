@@ -22,6 +22,7 @@ frame:SetScript("OnEvent", function(f, event)
 	if T.DungeonGrindrDataStore:GetIgnoreNewPlayers() == nil then
 		T.DungeonGrindrDataStore:SetIgnoreNewPlayers(true)
 	end
+	frame:UnregisterEvent("ADDON_LOADED")
 	print("DungeonGrindrDataStore Loaded")
 end)
 
