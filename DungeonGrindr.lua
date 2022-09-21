@@ -194,6 +194,12 @@ DungeonGrindr:SetScript("OnEvent", function(f, event)
 	
 	if event == "GROUP_ROSTER_UPDATE" and dungeonQueue.queueStatus == queueStateEnum.inprogress then
 		DungeonGrindr:LeaveQueue()
+	elseif event == "GROUP_ROSTER_UPATE" and dungeonQueue.queueStatus == queueStateEnum.invitingGroup then
+		if GetNumGroupMembers() == 5 then
+			DungeonGrindr:LeaveQueue()
+			boxFrame:Hide()
+			return
+		end
 	end
 	
 	if event == "ROLE_CHANGED_INFORM" or event == "TALENT_GROUP_ROLE_CHANGED" or event == "ACTIVE_TALENT_GROUP_CHANGED" then
@@ -830,7 +836,11 @@ function DungeonGrindr:ChatCommands(msg)
 		table.insert(args, word)
 	end
     if args[1] == nil then
-		boxFrame:Show()
+		if boxFrame:IsShown() then
+			boxFrame:Hide()
+		else 
+			boxFrame:Show()
+		end
 	elseif args[1] == "help" then
 		dataStore:SetHelpShown(false)
 		T.DungeonGrindrHelp.frame:Show()
