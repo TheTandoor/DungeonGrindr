@@ -291,7 +291,7 @@ function DungeonGrindr:SearchResultContains(searchResultInfo, activityId)
 end
 
 function DungeonGrindr:InvalidateUI(groupToInvite, dungeonQueue)
-	if dungeonQueue.dungeonId and dungeonQueue.dungeonId > 1120 then 
+	if dungeonQueue.dungeonId and DungeonGrindr:IsHeroic(dungeonQueue.dungeonId) then 
 		DungeonGrindrUI.framesCollection.titleFrame.text:SetText("HC: "..dungeonQueue.dungeonName)
 	else
 		DungeonGrindrUI.framesCollection.titleFrame.text:SetText(dungeonQueue.dungeonName)
@@ -492,10 +492,18 @@ function DungeonGrindr:InviteParty(dungeonId, groupToInvite)
 	end)
 end
 
+function DungeonGrindr:IsHeroic(dungeonId)
+	return dungeonId > 1120 or (dungeonId > 900 and dungeonId < 1000)
+end
+
 function DungeonGrindr:Invite(player, role, dungeonId)
 	local activityInfo = Funcs:GetActivityInfoTable(dungeonId)
- 
-	local firstMsg = "[DungeonGrindr] You are being invited to " .. activityInfo.fullName .. " as a " .. role
+
+	local heroicText = ""
+	if DungeonGrindr:IsHeroic(dungeonId) == true then
+		heroicText = "Heroic: "
+	end
+	local firstMsg = "[DungeonGrindr] You are being invited to " .. heroicText .. activityInfo.fullName .. " as a " .. role
 	local secondMsg = "[DungeonGrindr] If you are in a party, please drop group. You will be invited again in 15s"
 
 	if player == "player" or player == UnitName("player") then 
@@ -533,8 +541,12 @@ function DungeonGrindr:Reinvite(player, role, dungeonId)
 	if dataStore:GetAutoReinvite() == false then return end
 	
 	local activityInfo = Funcs:GetActivityInfoTable(dungeonId)
+	local heroicText = ""
+	if DungeonGrindr:IsHeroic(dungeonId) == true then
+		heroicText = "Heroic: "
+	end
  
-	local firstMsg = "[DungeonGrindr] You are being reinvited to " .. activityInfo.fullName .. " as a " .. role
+	local firstMsg = "[DungeonGrindr] You are being reinvited to "  .. heroicText .. activityInfo.fullName .. " as a " .. role
  
 	if player == "player" or player == UnitName("player") then 
 		if DEBUG then 
@@ -567,10 +579,15 @@ function DungeonGrindr:LeaveQueue()
 	inviteGroupButton:Hide()
 	
 	if dungeonQueue.inQueue and dungeonQueue.dungeonName ~= "" then
+		local heroicText = ""
+		if DungeonGrindr:IsHeroic(dungeonQueue.dungeonId) then 
+			heroicText = "HC: "
+		end
+
 		if IsInGroup() then
-			SendChatMessage("[DungeonGrindr] Left queue for " .. tostring(dungeonQueue.dungeonName), "PARTY", nil, nil)
+			SendChatMessage("[DungeonGrindr] Left queue for " .. heroicText .. tostring(dungeonQueue.dungeonName), "PARTY", nil, nil)
 		else
-			DungeonGrindr:PrettyPrint("[DungeonGrindr] Left queue for " .. tostring(dungeonQueue.dungeonName))
+			DungeonGrindr:PrettyPrint("[DungeonGrindr] Left queue for " .. heroicText .. tostring(dungeonQueue.dungeonName))
 		end
 	end
 	
@@ -771,10 +788,16 @@ function DungeonGrindr:FillGroupFor(dungeonId)
 	dungeonQueue.queueStatus = queueStateEnum.inprogress
 	dungeonQueue.queuePopTimerExpired = false
 	
+	local heroicText = ""
+	
+	if DungeonGrindr:IsHeroic(dungeonQueue.dungeonId) then 
+		heroicText = "HC: "
+	end
+	
 	if IsInGroup() then
-		SendChatMessage("[DungeonGrindr] Joined queue for " .. tostring(dungeonQueue.dungeonName), "PARTY", nil, nil)
+		SendChatMessage("[DungeonGrindr] Joined queue for " .. heroicText .. tostring(dungeonQueue.dungeonName), "PARTY", nil, nil)
 	else
-		DungeonGrindr:PrettyPrint("Joined queue for " .. tostring(dungeonQueue.dungeonName))
+		DungeonGrindr:PrettyPrint("Joined queue for " .. heroicText.. tostring(dungeonQueue.dungeonName))
 	end
 
 	DungeonGrindr:Retry(dungeonQueue)
@@ -900,7 +923,11 @@ local ONUPDATE_INTERVAL = 2
 local TimeSinceLastUpdate = 0
 frame:SetScript("OnUpdate", function(self, elapsed)
 	TimeSinceLastUpdate = TimeSinceLastUpdate + elapsed
-		
+	if refreshFrame:IsShown() then
+		TimeSinceLastUpdate = 0
+		return
+	end
+	
 	if TimeSinceLastUpdate >= ONUPDATE_INTERVAL then
 		TimeSinceLastUpdate = 0
 		
@@ -910,7 +937,6 @@ frame:SetScript("OnUpdate", function(self, elapsed)
 			refreshFrame:Hide()
 			return
 		end
-		DungeonGrindr:DebugPrint("OnUpdate Queue search")
 		refreshFrame:Show()
 	end
 end)
@@ -1222,7 +1248,7 @@ function _LFGBrowseActivityDropDown_UpdateHeader(self)
 		UIDropDownMenu_SetText(self, LFGBROWSE_ACTIVITY_HEADER_DEFAULT);
 	elseif #self.selectedValues == 1 then
 		local activityInfo = C_LFGList.GetActivityInfoTable(self.selectedValues[1]);
-		if self.selectedValues[1] > 1120 then 
+		if DungeonGrindr:IsHeroic(self.selectedValues[1]) then 
 			UIDropDownMenu_SetText(self, "HC: " .. activityInfo.fullName);
 		else 
 			UIDropDownMenu_SetText(self, activityInfo.fullName);
