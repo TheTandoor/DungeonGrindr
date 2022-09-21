@@ -192,10 +192,6 @@ DungeonGrindr:SetScript("OnEvent", function(f, event)
 		return
 	end
 	
-	if event == "PLAYER_ROLES_ASSIGNED" then 
-		-- dungeonQueue.roleCheckState = roleCheckEnum.complete
-	end
-	
 	if event == "GROUP_ROSTER_UPDATE" and dungeonQueue.queueStatus == queueStateEnum.inprogress then
 		DungeonGrindr:LeaveQueue()
 	end
@@ -211,7 +207,13 @@ DungeonGrindr:SetScript("OnEvent", function(f, event)
 		
 		if dungeonQueue.roleCheckCount == GetNumGroupMembers() then
 			dungeonQueue.roleCheckCount = 0
-			dungeonQueue.roleCheckState = roleCheckEnum.complete
+			if DungeonGrindr:IsValidStarterRoleComplete() == false then 
+				DungeonGrindr:PrettyPrint("Valid groups cannot contain multiple tanks/healers or more than 3 dps")
+				dungeonQueue.roleCheckState = roleCheckEnum.none
+			else
+				dungeonQueue.roleCheckState = roleCheckEnum.complete
+			end
+			
 			roleCheckButton:SetText("Role Check")
 		end
 	end
@@ -574,7 +576,7 @@ function DungeonGrindr:LeaveQueue()
 	
 	-- Reset the indivual items in the object but don't override the object itself
 	dungeonQueue.roleCheckState = roleCheckEnum.none
-	dungeonQueueroleCheckCount = 0
+	dungeonQueue.roleCheckCount = 0
 	dungeonQueue.dungeonId = dungeonQueue.dungeonId
 	dungeonQueue.dungeonName = dungeonQueue.dungeonName
 	dungeonQueue.inQueue = false
@@ -591,6 +593,43 @@ function DungeonGrindr:LeaveQueue()
 	_LFGBrowseActivityDropDown_ValueSetSelected(activityDropdown, dungeonQueue.dungeonId, true) -- ensure our dropdown stays selected
 
 	DungeonGrindr:InvalidateUI(groupToInvite, dungeonQueue)
+end
+
+function DungeonGrindr:IsValidStarterRoleComplete()
+	local groupComp = {
+		tanks = 0,
+		healers = 0,
+		dps = 0,
+	}
+
+	if IsInGroup() then
+		for i = 1, GetNumGroupMembers() do
+			local partyIndex = "party"..i
+			local role = UnitGroupRolesAssigned(partyIndex)
+			local name = UnitName(partyIndex)
+			if name == nil then
+				name = "player"
+				role = GetTalentGroupRole(GetActiveTalentGroup());
+			end
+			DungeonGrindr:DebugPrint("role for " .. name ..": " .. partyIndex .. ":" .. role)
+			
+			if role == "DAMAGER" then
+				groupComp.dps = groupComp.dps + 1
+			elseif role == "TANK" then
+				groupComp.tanks = groupComp.tanks + 1
+			elseif role == "HEALER" then
+				groupComp.healers = groupComp.healers + 1
+			end
+		end
+		
+		if groupComp.dps > 3 or groupComp.tanks > 1 or groupComp.healers > 1 then
+			return false
+		else 
+			return true
+		end
+	else
+		return true
+	end
 end
 
 function DungeonGrindr:InvalidateNameFrames(groupToInvite)
@@ -718,6 +757,11 @@ function DungeonGrindr:FillGroupFor(dungeonId)
 		DungeonGrindr:AddPlayerToGroupComp(groupComp, role)
 	end
 	DungeonGrindr:DebugPrint("---- Current Group: " .. groupComp["tanks"] .. ":" .. groupComp["healers"] .. ":" .. groupComp["dps"] .. " ----")
+
+	if DungeonGrindr:IsValidStarterRoleComplete() == false then
+		DungeonGrindr:LeaveQueue()
+		return
+	end
 
 	dungeonQueue.dungeonId = dungeonId
 	dungeonQueue.needs.tanks = 1 - groupComp.tanks
