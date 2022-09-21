@@ -29,7 +29,7 @@ boxFrame:SetScript("OnHide", function(self)
    self.isMoving = false;
   end
 end)
-boxFrame:Show()
+boxFrame:Hide()
 
 local dungeonNameFrame = CreateFrame("Frame", nil, boxFrame)
 dungeonNameFrame:SetSize(30, 100)
