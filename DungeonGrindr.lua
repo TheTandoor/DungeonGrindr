@@ -1178,12 +1178,3 @@ function _LFGBrowseActivityDropDown_UpdateHeader(self)
 		UIDropDownMenu_SetText(self, string.format(LFGBROWSE_ACTIVITY_HEADER, #self.selectedValues));
 	end
 end
-
-
-
-
-
--- FIX DBM error
-if RolePollPopup and RolePollPopup:IsEventRegistered("ROLE_POLL_BEGIN") == false then
-	RolePollPopup:RegisterEvent("ROLE_POLL_BEGIN")
-end
