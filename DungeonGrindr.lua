@@ -247,7 +247,7 @@ DungeonGrindr:SetScript("OnEvent", function(f, event)
 	-- ensure the user isn't navigating the group finder and looking at invalid results
 	local entryData = Funcs:GetActiveEntryInfo();
 	if (entryData) then
-		if entryData.activityID ~= dungoneQueue.dungeonId then
+		if entryData.activityID ~= dungeonQueue.dungeonId then
 			return 
 		end 
 	end
@@ -262,7 +262,7 @@ DungeonGrindr:SetScript("OnEvent", function(f, event)
 		DungeonGrindr:DebugPrint(event);
 
 		local results = select(2, Funcs:GetFilteredSearchResults());
-		DungeonGrindr:EnsurePlayersStillInQueue(groupToInvite, dungeonQueue, results)
+		DungeonGrindr:EnsurePlayersStillInQueue(results)
 		
 		for index = 1, #results do
 			if dungeonQueue.inQueue == false then break end
@@ -271,11 +271,11 @@ DungeonGrindr:SetScript("OnEvent", function(f, event)
 			local searchResultInfo = Funcs:LFGListGetSearchResultInfo(resultID);
 			
 			if searchResultInfo.isDelisted == true or searchResultInfo.numMembers > 1 then
-				DungeonGrindr:RemovePlayerForReason(dungeonQueue, groupToInvite, resultID, "delisted")
+				DungeonGrindr:RemovePlayerForReason(resultID, "delisted")
 			end
 
 			if DungeonGrindr:SearchResultContains(searchResultInfo, dungeonQueue.dungeonId) == true and searchResultInfo.isDelisted == false and searchResultInfo.numMembers == 1 then
-				DungeonGrindr:CachePlayerIfFits(dungeonQueue, groupToInvite, resultID)
+				DungeonGrindr:CachePlayerIfFits(resultID)
 			end
 		end
 	end
@@ -343,11 +343,11 @@ function DungeonGrindr:InvalidateUI(groupToInvite, dungeonQueue)
 	DungeonGrindr:PrintGroupCache(groupToInvite)
 end
 
-function DungeonGrindr:EnsurePlayersStillInQueue(groupToInvite, dungeonQueue, results)
+function DungeonGrindr:EnsurePlayersStillInQueue(results)
 	if groupToInvite.tank ~= "" then 
 		local playerName = groupToInvite.tank
 		if DungeonGrindr:IsPlayerInQueueAsRole(playerName, "tank", results) == false and UnitInParty(playerName) ~= true then
-			dungeonQueue.needs.tank = 1
+			dungeonQueue.needs.tanks = 1
 			groupToInvite.tank = ""
 			DungeonGrindr:DebugPrint("Removing TANK for not in queue: " .. playerName)
 		end
@@ -356,7 +356,7 @@ function DungeonGrindr:EnsurePlayersStillInQueue(groupToInvite, dungeonQueue, re
 	if groupToInvite.healer ~= "" then 
 		local playerName = groupToInvite.healer
 		if DungeonGrindr:IsPlayerInQueueAsRole(playerName, "healer", results) == false and UnitInParty(playerName) ~= true then
-			dungeonQueue.needs.healer = 1
+			dungeonQueue.needs.healers = 1
 			groupToInvite.healer = ""
 			DungeonGrindr:DebugPrint("Removing HEALER for not in queue: " .. playerName)
 		end
@@ -381,7 +381,7 @@ function DungeonGrindr:IsPlayerInQueueAsRole(playerName, role, results)
 	for index = 1, #results do
 		local resultID = results[index]
 		local name, _, _, _, _, _, soloRoleTank, soloRoleHealer, soloRoleDPS = Funcs:GetSearchResultLeaderInfo(resultID);
-	
+
 		if name == playerName then
 			-- Check to see if a player has added players to their group but is still in queue
 			local searchResultInfo = Funcs:LFGListGetSearchResultInfo(resultID);
@@ -400,7 +400,7 @@ function DungeonGrindr:IsPlayerInQueueAsRole(playerName, role, results)
 	return false
 end
 
-function DungeonGrindr:RemovePlayerForReason(dungeonQueue, groupToInvite, resultID, reason)
+function DungeonGrindr:RemovePlayerForReason(resultID, reason)
 	local dpsFrames = roleFrames.dps
 	local tankFrame = roleFrames.tank
 	local healerFrame = roleFrames.healer
@@ -410,37 +410,41 @@ function DungeonGrindr:RemovePlayerForReason(dungeonQueue, groupToInvite, result
 		groupToInvite.tank = ""
 		roleFrames.nameFrames.tank.text:SetText("")
 		dungeonQueue.needs.tanks = dungeonQueue.needs.tanks + 1
-		DungeonGrindr:DebugPrint("Removing player for " ..reason ..": " .. name)
-	elseif groupToInvite.healer == name then
+		DungeonGrindr:DebugPrint("Removing player for " .. reason ..": " .. name)
+	end
+	if groupToInvite.healer == name then
 		groupToInvite.healer = ""
 		roleFrames.nameFrames.healer.text:SetText("")
 		dungeonQueue.needs.healers = dungeonQueue.needs.healers + 1
-		DungeonGrindr:DebugPrint("Removing player for " ..reason ..": " .. name)
-	elseif groupToInvite.dps[1] == name then
+		DungeonGrindr:DebugPrint("Removing player for " .. reason ..": " .. name)
+	end
+	if groupToInvite.dps[1] == name then
 		groupToInvite.dps[1] = ""
 		roleFrames.nameFrames.dps[1].text:SetText("")
 		dungeonQueue.needs.dps = dungeonQueue.needs.dps + 1
-		DungeonGrindr:DebugPrint("Removing player for " ..reason ..": " .. name)
-	elseif groupToInvite.dps[2] == name then
+		DungeonGrindr:DebugPrint("Removing player for " .. reason ..": " .. name)
+	end
+	if groupToInvite.dps[2] == name then
 		groupToInvite.dps[2] = ""
 		roleFrames.nameFrames.dps[2].text:SetText("")
 		dungeonQueue.needs.dps = dungeonQueue.needs.dps + 1
-		DungeonGrindr:DebugPrint("Removing player for " ..reason ..": " .. name)
-	elseif groupToInvite.dps[3] == name then
+		DungeonGrindr:DebugPrint("Removing player for " .. reason ..": " .. name)
+	end
+	if groupToInvite.dps[3] == name then
 		groupToInvite.dps[3] = ""
 		roleFrames.nameFrames.dps[3].text:SetText("")
 		dungeonQueue.needs.dps = dungeonQueue.needs.dps + 1
-		DungeonGrindr:DebugPrint("Removing player for " ..reason ..": " .. name)
+		DungeonGrindr:DebugPrint("Removing player for " .. reason ..": " .. name)
 	end
 end
 
-function DungeonGrindr:CachePlayerIfFits(dungeonQueue, groupToInvite, resultID)
+function DungeonGrindr:CachePlayerIfFits(resultID)
 	local name, role, classFileName, className, level, areaName, soloRoleTank, soloRoleHealer, soloRoleDPS, isNewPlayerFriendly = Funcs:GetSearchResultLeaderInfo(resultID);
 	
 	if isNewPlayerFriendly == true and dataStore:GetIgnoreNewPlayers() then return end
-	
+
 	-- Guard against duplicates 
-	DungeonGrindr:RemovePlayerForReason(dungeonQueue, groupToInvite, resultID, "duplicate entry")
+	DungeonGrindr:RemovePlayerForReason(resultID, "duplicate entry")
 	
 	if soloRoleTank == true and dungeonQueue.needs.tanks > 0 and DungeonGrindr:ValidateRoleIsLogical(className, "TANK") == true then
 		dungeonQueue.needs.tanks = dungeonQueue.needs.tanks - 1

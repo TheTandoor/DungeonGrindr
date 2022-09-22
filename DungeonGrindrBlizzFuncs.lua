@@ -37,3 +37,4 @@ end
 function T.Funcs:GetAvailableActivities(...)
 	return C_LFGList.GetAvailableActivities(...);
 end
+
