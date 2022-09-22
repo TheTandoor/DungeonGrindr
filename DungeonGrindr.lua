@@ -377,7 +377,6 @@ function DungeonGrindr:EnsurePlayersStillInQueue(results)
 	end
 
 	dungeonQueue.needs.dps = dungeonQueue.needs.dps + dpsUnlistedCounter
-	print("dungeonqueue dps needs: " .. tostring(dungeonQueue.needs.dps))
 end
 
 function DungeonGrindr:IsPlayerInQueueAsRole(playerName, role, results)
@@ -675,7 +674,7 @@ function DungeonGrindr:ReOrderTheDPS()
 		groupToInvite.dps[2] = groupToInvite.dps[1]
 		groupToInvite.dps[1] = ""
 	end
-	
+
 	if groupToInvite.dps[3] == "" then
 		groupToInvite.dps[3] = groupToInvite.dps[2]
 		groupToInvite.dps[2] = ""
