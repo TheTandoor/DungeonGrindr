@@ -271,7 +271,7 @@ DungeonGrindr:SetScript("OnEvent", function(f, event)
 			local searchResultInfo = Funcs:LFGListGetSearchResultInfo(resultID);
 			
 			if searchResultInfo.isDelisted == true or searchResultInfo.numMembers > 1 then
-				DungeonGrindr:RemovePlayerForDelisted(dungeonQueue, groupToInvite, resultID)
+				DungeonGrindr:RemovePlayerForReason(dungeonQueue, groupToInvite, resultID, "delisted")
 			end
 
 			if DungeonGrindr:SearchResultContains(searchResultInfo, dungeonQueue.dungeonId) == true and searchResultInfo.isDelisted == false and searchResultInfo.numMembers == 1 then
@@ -400,7 +400,7 @@ function DungeonGrindr:IsPlayerInQueueAsRole(playerName, role, results)
 	return false
 end
 
-function DungeonGrindr:RemovePlayerForDelisted(dungeonQueue, groupToInvite, resultID)
+function DungeonGrindr:RemovePlayerForReason(dungeonQueue, groupToInvite, resultID, reason)
 	local dpsFrames = roleFrames.dps
 	local tankFrame = roleFrames.tank
 	local healerFrame = roleFrames.healer
@@ -410,27 +410,27 @@ function DungeonGrindr:RemovePlayerForDelisted(dungeonQueue, groupToInvite, resu
 		groupToInvite.tank = ""
 		roleFrames.nameFrames.tank.text:SetText("")
 		dungeonQueue.needs.tanks = dungeonQueue.needs.tanks + 1
-		DungeonGrindr:DebugPrint("Removing player for delist: " .. name)
+		DungeonGrindr:DebugPrint("Removing player for " ..reason ..": " .. name)
 	elseif groupToInvite.healer == name then
 		groupToInvite.healer = ""
 		roleFrames.nameFrames.healer.text:SetText("")
 		dungeonQueue.needs.healers = dungeonQueue.needs.healers + 1
-		DungeonGrindr:DebugPrint("Removing player for delist: " .. name)
+		DungeonGrindr:DebugPrint("Removing player for " ..reason ..": " .. name)
 	elseif groupToInvite.dps[1] == name then
 		groupToInvite.dps[1] = ""
 		roleFrames.nameFrames.dps[1].text:SetText("")
 		dungeonQueue.needs.dps = dungeonQueue.needs.dps + 1
-		DungeonGrindr:DebugPrint("Removing player for delist: " .. name)
+		DungeonGrindr:DebugPrint("Removing player for " ..reason ..": " .. name)
 	elseif groupToInvite.dps[2] == name then
 		groupToInvite.dps[2] = ""
 		roleFrames.nameFrames.dps[2].text:SetText("")
 		dungeonQueue.needs.dps = dungeonQueue.needs.dps + 1
-		DungeonGrindr:DebugPrint("Removing player for delist: " .. name)
+		DungeonGrindr:DebugPrint("Removing player for " ..reason ..": " .. name)
 	elseif groupToInvite.dps[3] == name then
 		groupToInvite.dps[3] = ""
 		roleFrames.nameFrames.dps[3].text:SetText("")
 		dungeonQueue.needs.dps = dungeonQueue.needs.dps + 1
-		DungeonGrindr:DebugPrint("Removing player for delist: " .. name)
+		DungeonGrindr:DebugPrint("Removing player for " ..reason ..": " .. name)
 	end
 end
 
@@ -440,10 +440,7 @@ function DungeonGrindr:CachePlayerIfFits(dungeonQueue, groupToInvite, resultID)
 	if isNewPlayerFriendly == true and dataStore:GetIgnoreNewPlayers() then return end
 	
 	-- Guard against duplicates 
-	if groupToInvite.tank == name or groupToInvite.healer == name then return end 
-	for index = 1, #groupToInvite.dps do
-		if groupToInvite.dps[index] == name then return end
-	end
+	DungeonGrindr:RemovePlayerForReason(dungeonQueue, groupToInvite, resultID, "duplicate entry")
 	
 	if soloRoleTank == true and dungeonQueue.needs.tanks > 0 and DungeonGrindr:ValidateRoleIsLogical(className, "TANK") == true then
 		dungeonQueue.needs.tanks = dungeonQueue.needs.tanks - 1
